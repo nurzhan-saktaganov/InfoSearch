@@ -22,12 +22,12 @@ class URLAnalyzer:
             segments = parsed_url.path.split('/')[1:]
             if segments[-1] == '':
                 segments = segments[:-1]
-            #how much segments are here
+            # how much segments are here
             key = '_is_url_has_segments/' + str(len(segments))
             if key in features_dic.keys():
-                pass#features_dic[key] += 1
+                pass  # features_dic[key] += 1
             else:
-                pass#features_dic[key] = 1
+                pass  # features_dic[key] = 1
 
             for i in range(len(segments)):
                 key = '_is_url_satisfy/' + str(i) + '/' + segments[i]
@@ -43,11 +43,10 @@ class URLAnalyzer:
                     else:
                         features_dic[key] = 1
 
+        # {'feature_name':freq, ...} --> [['feature_name', freq], ...] sorted by freq
         sorted_features = sorted(features_dic.items(), key=operator.itemgetter(1), reverse=True)
-        #print sorted_features[:100]
-        #exit()
+
         for key, frequency in sorted_features:
-        #for key, frequency in features_dic.iteritems():
             self.features.append(key)
             self.frequency.append(frequency)
 
@@ -69,9 +68,6 @@ class URLAnalyzer:
                 result.append(0)
 
         return result
-
-    def get_features_list(self):
-        return self.features
 
     def _is_url_satisfy(self, url, segment_number, value):
         parsed_url = urlparse(url)
@@ -137,7 +133,7 @@ class URLAnalyzer:
                     tmp_description.append(self.features[i])
             if len(tmp_description) > 0:
                 tmp_descriptions.append(tmp_description)
-                #print tmp_description
+                # print tmp_description
 
         sorted_tmp_lists = []
         for description in tmp_descriptions:
@@ -194,7 +190,7 @@ def get_urls(url_file_name, count=0):
 def is_digits(arg):
     result = True
     for char in arg:
-        result = result and  (char in string.digits)
+        result = result and (char in string.digits)
     return result
 
 
@@ -203,7 +199,7 @@ def main():
     general_url_file_name = file_location + 'urls.zr.general'
     good_url_file_name = file_location + 'urls.zr.examined'
     regexp_output_file_name = 'regexp.txt'
-    tmp_file_name = 'tmp_file.txt'
+    # tmp_file_name = 'tmp_file.txt'
     n_samples = 4000
 
     if len(sys.argv) == 3:
@@ -219,51 +215,49 @@ def main():
         return
 
     all_urls = good_urls + general_urls
-
     print 'got %d urls' % (len(all_urls),)
 
-    feature_extractor = URLAnalyzer(all_urls, alfa=0.05 / 4.0)
+    feature_extractor = URLAnalyzer(all_urls, alfa=0.05 / (1.0 * n_samples / 1000))
     print 'generating features'
     feature_extractor.generate_features()
 
     vectors = []
     percents = 0
-
     print 'get urls features'
     for i in range(len(all_urls)):
         vectors.append(feature_extractor.get_url_features(all_urls[i]))
         if i % (n_samples / 100) == 0:
             percents += 1
             sys.stdout.write(str(percents) + '%\r')
-
     sys.stdout.write("\n")
+
     print 'clusterization'
-    clusters = fclusterdata(X=vectors, t=0.2, metric='jaccard', criterion='distance')
+    clusters = fclusterdata(X=vectors, t=0.3, metric='jaccard', criterion='distance')
     tmp_dic = {}
     for i in clusters:
         tmp_dic[i] = 1
 
-    tmp_file = open(tmp_file_name, 'w')
+    # tmp_file = open(tmp_file_name, 'w')
     tmp_list = tmp_dic.keys()[:]
     print 'generated %d clusters' % (len(tmp_list),)
+
     clusters_list = []
     for n in tmp_list:
-        tmp_file.write('----------new cluster -------------------\n')
+        # tmp_file.write('----------new cluster -------------------\n')
         cluster = []
         for i in range(len(clusters)):
             if n == clusters[i]:
-                tmp_file.write(all_urls[i] + '\n')
+                # tmp_file.write(all_urls[i] + '\n')
                 cluster.append(vectors[i])
         clusters_list.append(cluster)
 
-    #print clusters_list
     feature_extractor.set_clusters_info(clusters_list)
     reg_exps = feature_extractor.generate_regexp()
     reg_exps_output_file = open(regexp_output_file_name, 'w')
     print 'generated %d uniq reg_exp' % (len(reg_exps),)
     for reg_exp in reg_exps:
         reg_exps_output_file.write(reg_exp + '\n')
-        print reg_exp
+        # print reg_exp
 
 if __name__ == '__main__':
     main()
