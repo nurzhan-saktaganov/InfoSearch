@@ -49,7 +49,7 @@ def estimate_purity(good_urls, general_urls, reg_exps):
                 general += 1
                 total += 1
 
-        sys.stdout.write(str( '%.2lf' % (100.0 * (i + 1) / len(reg_exps), )) + '%\r')
+        #sys.stdout.write(str( '%.2lf' % (100.0 * (i + 1) / len(reg_exps), )) + '%\r')
 
         sum += max(good, general)
 
@@ -84,11 +84,11 @@ def main():
         random.shuffle(good_urls)
         random.shuffle(general_urls)
         purity = estimate_purity(good_urls[:1000], general_urls[:1000], reg_exps)
-        print '%d. purity = %lf' % (i + 1, purity)
+        print '%d. purity = %.2lf%%' % (i + 1, 100 * purity)
         total_purity += purity
 
     total_purity /= iterates_count
-    print 'total purity = %lf' %   (total_purity, )
+    print 'total purity = %.2lf%%' %   (100 * total_purity, )
 
 if __name__ == '__main__':
     main()

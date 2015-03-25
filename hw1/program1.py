@@ -9,11 +9,13 @@ from scipy.cluster.hierarchy import fclusterdata
 
 
 class URLAnalyzer:
-    def __init__(self, list_of_url, alfa=0.1):
+    def __init__(self, list_of_url, alfa=0.1, method='top', noise=0):
         self.list_of_url = list_of_url
         self.features = []
         self.frequency = []
         self.alfa = alfa
+        self.method = method
+        self.noise = noise
 
     def generate_features(self):
         features_dic = {}
@@ -50,7 +52,23 @@ class URLAnalyzer:
             self.features.append(key)
             self.frequency.append(frequency)
 
-        features_count = int(self.alfa * len(self.features))
+        #25 march 2015
+        if self.method == 'top':
+            features_count = int(self.alfa * len(self.features))
+        elif self.method == 'freq':
+            border = self.alfa * len(self.features)
+            features_count = len(self.features)
+            for i in range(len(self.features)):
+                if self.frequency[i] < border:
+                    features_count = i
+                    #print 'Elected %d features' % (features_count, )
+                    #print self.frequency
+                    print 
+                    break
+        else:
+            raise 'Unexpected method'
+        #25 march 2015
+        print 'got top %d from %d, method=%s' % (features_count, len(self.features), self.method)
         self.features = self.features[:features_count]
         self.frequency = self.frequency[:features_count]
 
@@ -118,10 +136,25 @@ class URLAnalyzer:
     def generate_regexp(self):
         clusters_description = []
         for cluster in self.clusters_info:
-            intersect = [1] * len(cluster[0])
+            #print cluster
+            #intersect = [1] * len(cluster[0])
+            #for vector in cluster:
+            #    for i in range(len(vector)):
+            #        intersect[i] *= vector[i]
+            #print intersect
+            #update march 25
+            intersect = [0] * len(cluster[0])
             for vector in cluster:
                 for i in range(len(vector)):
-                    intersect[i] *= vector[i]
+                    intersect[i] += vector[i]
+
+            for i in range(len(intersect)):
+                if intersect[i] < (1.0 - self.noise) * len(cluster):
+                    intersect[i] = 0
+                else:
+                    intersect[i] = 1
+            #update march 25
+
             clusters_description.append(intersect)
 
         tmp_descriptions = []
@@ -195,12 +228,12 @@ def is_digits(arg):
 
 
 def main():
-    file_location = '/home/nurzhan/data/src/sfera/infosearch/hw1/zr.ru/'
-    general_url_file_name = file_location + 'urls.zr.general'
-    good_url_file_name = file_location + 'urls.zr.examined'
+    file_location = '/home/nurzhan/data/src/sfera/infosearch/hw1/lenta.ru/'
+    general_url_file_name = file_location + 'urls.lenta.general'
+    good_url_file_name = file_location + 'urls.lenta.examined'
     regexp_output_file_name = 'regexp.txt'
-    # tmp_file_name = 'tmp_file.txt'
-    n_samples = 4000
+    tmp_file_name = 'tmp_file.txt'
+    n_samples = 1000
 
     if len(sys.argv) == 3:
         general_url_file_name = sys.argv[1]
@@ -217,7 +250,7 @@ def main():
     all_urls = good_urls + general_urls
     print 'got %d urls' % (len(all_urls),)
 
-    feature_extractor = URLAnalyzer(all_urls, alfa=0.05 / (1.0 * n_samples / 1000))
+    feature_extractor = URLAnalyzer(all_urls, alfa=0.15, method='top', noise=0.15)
     print 'generating features'
     feature_extractor.generate_features()
 
@@ -228,26 +261,26 @@ def main():
         vectors.append(feature_extractor.get_url_features(all_urls[i]))
         if i % (n_samples / 100) == 0:
             percents += 1
-            sys.stdout.write(str(percents) + '%\r')
-    sys.stdout.write("\n")
+            #sys.stdout.write(str(percents) + '%\r')
+    #sys.stdout.write("\n")
 
     print 'clusterization'
-    clusters = fclusterdata(X=vectors, t=0.3, metric='jaccard', criterion='distance')
+    clusters = fclusterdata(X=vectors, t=0.30, metric='jaccard', criterion='distance')
     tmp_dic = {}
     for i in clusters:
         tmp_dic[i] = 1
 
-    # tmp_file = open(tmp_file_name, 'w')
+    #tmp_file = open(tmp_file_name, 'w')
     tmp_list = tmp_dic.keys()[:]
     print 'generated %d clusters' % (len(tmp_list),)
 
     clusters_list = []
     for n in tmp_list:
-        # tmp_file.write('----------new cluster -------------------\n')
+        #tmp_file.write('----------new cluster -------------------\n')
         cluster = []
         for i in range(len(clusters)):
             if n == clusters[i]:
-                # tmp_file.write(all_urls[i] + '\n')
+                #tmp_file.write(all_urls[i] + '\n')
                 cluster.append(vectors[i])
         clusters_list.append(cluster)
 
