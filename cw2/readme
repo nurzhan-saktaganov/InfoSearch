@@ -1,6 +1,5 @@
-varbyte_encoder.py - 
-varbyte_decoder.py -
+VarByte.py
+Simple9.py
 nums100 - file with 100 integer numbers
-nums100encoded - numbers in nums100 that encoded with VarByte algorithm
-nums100decoded - numbers that decoded from nums100encoded
 run.sh - shell script that runs test
+test.py - test program
