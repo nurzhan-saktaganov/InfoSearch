@@ -1,2 +1,3 @@
 # InfoSearch
-my works :)
+cw - class works
+hw - home works
