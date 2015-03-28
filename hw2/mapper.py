@@ -19,7 +19,7 @@ def main():
     for line in sys.stdin:
         doc_id, html_b64encoded = line.split('\t')
 
-        html_code = zlib.decompress(base64.b64decode(html_b64encoded))
+        html_code = unicode(zlib.decompress(base64.b64decode(html_b64encoded)), encoding='utf-8')
         html_noscript = script_cleaner.clean_html(html_code)
 
         #code from comment https://sfera-mail.ru/blog/Find/611.html#comment2000
