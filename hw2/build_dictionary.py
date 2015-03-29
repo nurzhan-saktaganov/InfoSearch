@@ -21,8 +21,7 @@ def main():
     except Exception, e:
         print 'The input file is not specified'
         help()
-        #exit()
-        input_file = './inverted_index/lenta.ru.txt'
+        exit()
     
     try:
         output_file = sys.argv[sys.argv.index('-o') + 1]
