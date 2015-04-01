@@ -12,6 +12,10 @@ def main():
     list_of_doc_id = []
     encoder = VarByte.VarByte
 
+    if len(sys.argv) == 2 and sys.argv[1] == 'Simple9':
+    	encoder = Simple9.Simple9
+
+
     for line in sys.stdin:
         current_term, doc_id = line.split('\t')
         if current_term == previous_term or previous_term == None:
