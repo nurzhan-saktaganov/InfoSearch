@@ -13,8 +13,8 @@ SPLIT_RGX = re.compile('\w+', re.U)
 
 def main():
 
-    script_cleaner = lxml.html.clean.Cleaner(scripts=False,javascript=False\
-        ,comments=True,style=False,links=False,meta=False,kill_tags=['script','style'])
+    script_cleaner = lxml.html.clean.Cleaner(scripts=True,javascript=True\
+        ,comments=True,style=True,links=False,meta=False) #,kill_tags=['script','style'])
 
     for line in sys.stdin:
         doc_id, html_b64encoded = line.split('\t')
