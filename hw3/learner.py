@@ -9,6 +9,7 @@ __author__ = 'Nurzhan Saktaganov'
 
 TERMINAL_CHARACTERS = [u'.', u'?', u'!']
 THE_NUMBERS = [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
+OPT = 69
 
 def help():
     print 'Options:\n -s\t<source file>\n'
@@ -32,8 +33,8 @@ def help():
 # 16. Титул справа
 # 17. Слово справа с прописной буквы
 # 18. Конец абзаца справа
-# 19. Расстояние до левой точки
-# 20. Расстояние до правой точки
+# 19. Расстояние до левого разделителя
+# 20. Расстояние до правого разделителя
 
 def main():
     classifier = RandomForestClassifier(n_estimators=15 \
@@ -64,7 +65,23 @@ def main():
                 context = line[i - 1: i + 3]
             else:
                 continue #context = '\r' + line[i: i + 3]
-            x = get_features(context)
+
+            left = i - 1
+            while left >= 0 and line[left] not in TERMINAL_CHARACTERS:
+                left -= 1
+
+            left_distance = i - left
+
+            right = i + 1
+            while right <= len(line) - 1 and line[right] not in TERMINAL_CHARACTERS:
+                right += 1
+
+            if i == len(line)  - 1:
+                right_distance = OPT
+            else:
+                right_distance = right - i
+
+            x = get_features(context, left_distance, right_distance)
             if classifier.predict(x) == 1:
                 print line[begin: i + 1].encode('utf-8')
                 begin = i + 2
@@ -77,7 +94,7 @@ def main():
 
 
 # Формат context <0: символ слева><1 :терминал><2: символ справав>[<3: необязательный символ>]
-def get_features(context):
+def get_features(context, left_distance, right_distance):
     X = []
     
     # 1. Тип разделителя: точка, вопросительный знак, восклицательный знак - 0, 1, 2
@@ -185,6 +202,12 @@ def get_features(context):
         X.append(1)
     else:
         X.append(0)
+
+    # 19. Расстояние до левого разделителя
+    X.append(left_distance)
+
+    # 20. Расстояние до правого разделителя
+    X.append(right_distance)
 
     return X
 
@@ -335,9 +358,34 @@ def get_training_set(xml_root):
                         else:
                             X.append(0)
 
-                        #X.append(left)
+                        # 19. Расстояние до левого разделителя
+                        left = j - 1
+                        while left >= 0 \
+                                and list_of_sentences[i][left] not in TERMINAL_CHARACTERS:
+                            left -= 1
+                        left_distance = j - left
+                        X.append(left_distance)
 
-                        #X.append(right)
+
+                        # 20. Расстояние до правого разделителя
+                        right = j + 1
+                        while right <= len(list_of_sentences[i]) - 1 \
+                                and list_of_sentences[i][right] not in TERMINAL_CHARACTERS:
+                            right += 1
+
+                        if right == len(list_of_sentences[i]) \
+                                and i < len(list_of_sentences) - 1:
+                            tmp = 0
+                            while tmp < len(list_of_sentences[i + 1]) - 1 \
+                                    and list_of_sentences[i + 1][tmp] not in TERMINAL_CHARACTERS:
+                                tmp += 1
+                            right += tmp
+                        elif right == len(list_of_sentences[i]):
+                            right += OPT
+
+                        right_distance = right - j
+
+                        X.append(right_distance)
 
                         # Вектор признаков для текущего разделителя
                         training_set_X.append(X)
