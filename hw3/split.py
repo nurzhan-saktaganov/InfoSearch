@@ -10,12 +10,13 @@ from sklearn.ensemble import RandomForestClassifier
 from functions import get_part
 from functions import get_training_set
 from functions import get_features
+from functions import print_estimate
 
 __author__ = 'Nurzhan Saktaganov'
 
 TERMINAL_CHARACTERS = [u'.', u'?', u'!']
 THE_NUMBERS = [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
-OPT = 69
+OPT = 30
 
 def get_options():
     parser = optparse.OptionParser()
@@ -35,17 +36,29 @@ def main():
     output_path = options.output_path
 
     classifier = RandomForestClassifier(n_estimators=70 \
-        , criterion='gini', max_features='auto', n_jobs=1)
+        , criterion='entropy', max_features='auto', n_jobs=1)
 
     tree = lxml.etree.parse(source_path)
     root = tree.getroot()
 
-    training_set_X, training_set_y = get_training_set(root)
+    set_X, set_y = get_training_set(root)
+
+    #all_set = [[set_X[i], set_y[i]] for i in range(len(set_y))]
+
+    border = int(0.8 * len(set_X))
+    training_set_X = set_X[:border]
+    training_set_y = set_y[:border]
+
+    test_set_X = set_X[border:]
+    test_set_y = set_y[border:]
+
+    #for i in range(100):
+    #    print all_set[i]
+    #exit()
 
     classifier.fit(training_set_X, training_set_y)
-
-    #for i in range(len(training_set_X)):
-        #pass #print training_set_X[i] + [training_set_y[i]]
+    predicted_y = classifier.predict(test_set_X)
+    print_estimate(y_predicted=predicted_y, y_true=test_set_y)
 
     output = open(output_path, 'w')
     to_split = open(to_split_path, 'r')

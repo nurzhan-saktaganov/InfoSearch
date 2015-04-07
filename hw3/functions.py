@@ -24,7 +24,7 @@
 
 TERMINAL_CHARACTERS = [u'.', u'?', u'!']
 THE_NUMBERS = [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
-OPT = 69
+OPT = 30
 
 # Формат context <0: символ слева><1 :терминал><2: символ справав>[<3: необязательный символ>]
 def get_features(context, left_distance, right_distance):
@@ -314,7 +314,7 @@ def get_training_set(xml_root):
                                 tmp += 1
                             right += tmp
                         elif right == len(list_of_sentences[i]):
-                            right += OPT
+                            right += OPT 
 
                         right_distance = right - j
 
@@ -334,3 +334,38 @@ def get_training_set(xml_root):
 def get_part(etree_node, part):
     for node in etree_node.findall('.//' + part):
         yield node
+
+def print_estimate(y_predicted, y_true):
+    tp = fp = tn = fn = 0
+    for i in range(len(y_true)):
+        if y_predicted[i] == 1 and y_true[i] == 1:
+            tp += 1
+        elif y_predicted[i] == 1 and y_true[i] == 0:
+            fp += 1
+        elif y_predicted[i] == 0 and y_true[i] == 1:
+            fn += 1
+        elif y_predicted[i] == 0 and y_true[i] == 0:
+            tn += 1
+
+    print 'tp = %d\nfp = %d\nfn = %d\ntn = %d' % (tp, fp, fn, tn)
+
+    tmp = tp + fp + fn + tn
+    if tmp == 0:
+        tmp = 0.0
+    else:
+        tmp = 1.0 * (tp + tn) / tmp
+    print 'accuracy  = %lf' % (tmp, )
+    
+    tmp = tp + fp
+    if tmp == 0:
+        tmp = 0.0
+    else:
+        tmp = 1.0 * tp / tmp
+    print 'precision = %lf' % (tmp, )
+    
+    tmp = tp + fn
+    if tmp == 0:
+        tmp = 0.0
+    else:
+        tmp = 1.0 * tp / tmp
+    print 'recall    = %lf' % (tmp, )
