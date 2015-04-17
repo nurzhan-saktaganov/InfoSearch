@@ -35,7 +35,8 @@ def main():
 #output format: <term><\tab><document frequency><\tab><list of doc_id><\tab>
 #                    <list of counts><\tab><comma separated list of positions list>
 def print_result(term, dictionary, encoder):
-    ordered_dictionary = collections.OrderedDict(sorted(dictionary.items()))
+    # dictionary sorted by key
+    ordered_dictionary = collections.OrderedDict(sorted(dictionary.items(), key=lambda t: t[0]))
     list_of_doc_id, list_of_counts, list_of_positions_list = [], [], []
 
     for key, value in ordered_dictionary.iteritems():
