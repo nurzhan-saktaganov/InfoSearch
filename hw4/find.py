@@ -4,15 +4,12 @@
 import sys
 import pickle
 import argparse
+import signal
 
-import base64
 import VarByte
 import Simple9
 
 import math
-
-from sets import Set
-import signal
 
 __author__ = 'Nurzhan Saktaganov'
 
@@ -135,9 +132,6 @@ def main():
         # passage algorithm
 
         print documents_rank
-
-
-
 
 
 def good_bye(signal,frame):
