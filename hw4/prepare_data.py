@@ -16,7 +16,7 @@ __author__ = 'Nurzhan Saktaganov'
 # <output is {'dictionary': {<dictionary>}, 'docID_to': {'url': <url>, 'length': <length>}} >
 def get_args():
     parser = argparse.ArgumentParser(\
-        description='Prepare date for searcher', epilog='by ' + __author__)
+        description='Prepare data for searcher', epilog='by ' + __author__)
     parser.add_argument('-i','--index', help='raw index file',\
         dest='index', required=True, type=str)
     parser.add_argument('-u','--urls', help='file with urls',\
@@ -51,7 +51,6 @@ def main():
 
     with open(args.output, 'w') as output:
         pickle.dump(result, output)
-
 
 if __name__ == '__main__':
     main()

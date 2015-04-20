@@ -60,17 +60,18 @@ class Simple9:
         return base64.b64encode(str(bytearray(result)))
 
     @staticmethod
-    def decode(input_byte_list,from_diff=True):
+    def decode(b64encoded,from_diff=True):
         result = []
+        byte_list = [char for char in base64.b64decode(b64encoded)]
 
-        bytes_count = len(input_byte_list)
+        bytes_count = len(byte_list)
 
         for i in range(0, bytes_count, 4):
             encoded_32_bits =\
-                (ord(input_byte_list[i]) << 24)\
-                | (ord(input_byte_list[i + 1]) << 16)\
-                | (ord(input_byte_list[i + 2]) << 8)\
-                | (ord(input_byte_list[i + 3]))
+                (ord(byte_list[i]) << 24)\
+                | (ord(byte_list[i + 1]) << 16)\
+                | (ord(byte_list[i + 2]) << 8)\
+                | (ord(byte_list[i + 3]))
 
             # control_4_bits
             case = encoded_32_bits >> 28

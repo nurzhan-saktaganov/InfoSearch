@@ -21,9 +21,11 @@ class VarByte:
         return base64.b64encode(str(bytearray(result)))
 
     @staticmethod
-    def decode(input_byte_list,from_diff=True):
+    def decode(b64encoded,from_diff=True):
+        byte_list = [char for char in base64.b64decode(b64encoded)]
+
         number, result = 0, []
-        byte_list = map(ord, input_byte_list)
+        byte_list = map(ord, byte_list)
         for byte in byte_list:
             number *= 128
             number += (byte % 128)
