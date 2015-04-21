@@ -141,12 +141,35 @@ def main():
 
         # passage algorithm
         # TODO
+        for doc_id in documents_rank.keys():
+            sliding_window = {}
+            for term in terms:
+                sliding_window[term] = -1
+            print sliding_window
+
+            position_to_term = {}
+            for term, positions in documents_rank[doc_id][TERMS].iteritems():
+                for position in positions:
+                    position_to_term[position] = term
+
+            max_passage = 0.0
+
+            for position in sorted(position_to_term.keys()):
+                term = position_to_term[position]
+                sliding_window[term] = position
+                #print sliding_window
+                current_passage = 0.0
+                max_passage = max(max_passage, current_passage)
+
+            documents_rank[doc_id][PASSAGE] = max_passage
+
+            #print output
 
 
 
         # here we can assess final ranking sorting by final rank 
 
-        print documents_rank
+        #print documents_rank
 
 
 def good_bye(signal,frame):
