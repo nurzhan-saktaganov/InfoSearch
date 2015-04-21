@@ -27,8 +27,13 @@ PASSAGE = 1
 TERMS = 2
 
 TOP_N = 10
+
+# BM25
 b = 0.75
 k1 = 2.0
+
+# PASSAGE
+
 
 # df - document frequency, dc - document count
 get_idf = lambda df, dc:  math.log10(1.0 * dc / df)
@@ -93,7 +98,7 @@ def main():
         # documents_rank {'doc_id':[BM25, PASSAGE, {<term>: positions}}}
         documents_rank = {}
 
-        # get TOP N of BM25
+        # BM25 ranking
         for term in terms:
             if term not in dictionary:
                 continue
@@ -123,19 +128,29 @@ def main():
             print 'No matches!'
             continue
 
-        border = min(sorted([document_rank[BM25] for document_rank in documents_rank.values()], reverse=True)[:TOP_N])
+        # here we can assess boolean retrieval sorting by doc_id
+
+        # get TOP_N of BM25
+        border = sorted(list(set([document_rank[BM25] for document_rank in documents_rank.values()])), reverse=True)[:TOP_N][-1]
 
         for doc_id in documents_rank.keys():
             if documents_rank[doc_id][BM25] < border:
                 del documents_rank[doc_id]
 
+        # here we can assess pure bm25 ranking sorting by BM25 value
+
         # passage algorithm
+        # TODO
+
+
+
+        # here we can assess final ranking sorting by final rank 
 
         print documents_rank
 
 
 def good_bye(signal,frame):
-    print 'See You!'
+    print '\nSee You!'
     exit()
 
 
