@@ -51,9 +51,11 @@ def print_result(term, dictionary, encoder):
     output = term.decode('utf-8') + '\t' + str(len(list_of_doc_id)) + '\t'\
                  + encoded_list_of_doc_id + '\t'\
                  + encoded_list_of_counts + '\t'\
-                 + ','.join(encoded_list_of_positions_list)
 
-    print output.encode('utf-8')
+    for encoded_list_of_positions in encoded_list_of_positions_list:
+        output +=  encoded_list_of_positions + ','
+
+    print output.encode('utf-8')[:-1]
 
 if __name__ == '__main__':
     main()
