@@ -9,8 +9,6 @@ import zlib
 import lxml
 import lxml.html.clean
 
-import html2text
-
 SPLIT_RGX = re.compile('\w+', re.U)
 
 # output format: <term><\tab><doc_id><\space><count><\space><comma separated list of positions><\newline>
@@ -31,7 +29,13 @@ def main():
 
         words = re.findall(SPLIT_RGX, text)
 
-        print '%s\t%d\t%s' % (doc_id, len(words), base64.b64encode(zlib.compress(" ".join(words).encode('utf-8'))))
+        output = ''
+        for word in words:
+            output += word + ' '
+        output = output[:-1]
+
+        sys.stdout.write(doc_id + '\t' + str(len(words)) + '\t' + \
+                base64.b64encode(zlib.compress(output.encode('utf-8'))) + '\n')
 
 if __name__ == '__main__':
     main()

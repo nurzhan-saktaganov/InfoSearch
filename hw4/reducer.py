@@ -8,6 +8,11 @@ import base64
 
 import collections
 
+def read_data(input_file):
+	for line in input_file:
+		yield line
+
+
 def main():
 
     previous_term = None
@@ -18,7 +23,9 @@ def main():
     if len(sys.argv) == 2 and sys.argv[1] == 'Simple9':
     	encoder = Simple9.Simple9
 
-    for line in sys.stdin:
+    data = read_data(sys.stdin)
+
+    for line in data:
         current_term, doc_id, count, positions = line[:-1].split('\t')
         if current_term == previous_term or previous_term == None:
             dictionary[int(doc_id)] = [int(count), map(int, positions.split(','))]
@@ -55,7 +62,9 @@ def print_result(term, dictionary, encoder):
     for encoded_list_of_positions in encoded_list_of_positions_list:
         output +=  encoded_list_of_positions + ','
 
-    print output.encode('utf-8')[:-1]
+    output = output[:-1] + '\n'
+
+    sys.stdout.write(output.encode('utf-8'))
 
 if __name__ == '__main__':
     main()

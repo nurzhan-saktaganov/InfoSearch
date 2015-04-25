@@ -17,15 +17,16 @@ __author__ = 'Nurzhan Saktaganov'
 def get_args():
     parser = argparse.ArgumentParser(\
         description='Prepare data for searcher', epilog='by ' + __author__)
-    parser.add_argument('-i','--index', help='raw index file',\
+    parser.add_argument('-i','--index', help='raw index file',metavar='<index file path>',\
         dest='index', required=True, type=str)
-    parser.add_argument('-u','--urls', help='file with urls',\
+    parser.add_argument('-u','--urls', help='file with urls',metavar='<urls file path>',\
         dest='urls', required=True, type=str)
-    parser.add_argument('-l','--length', help='file with length',\
+    parser.add_argument('-l','--length', help='file with length',metavar='<length file path>',\
         dest='length', required=True, type=str)
-    parser.add_argument('-o','--output', help='output file',\
+    parser.add_argument('-o','--output', help='output file',metavar='<output file path>',\
         dest='output', required=False, type=str, default='output.data')
     return parser.parse_args()
+
 def main():
     args = get_args()
 
@@ -40,12 +41,12 @@ def main():
     docID_to_length = {}
     with open(args.length, 'r') as length_file:
         for line in length_file:
-            doc_id, length = line.strip().split('\t')
+            doc_id, length, direct_index = line.strip().split('\t')
             docID_to_length[int(doc_id)] = int(length)
 
     docID_to = {}
     for key in docID_to_url.keys():
-        docID_to[key] = {'url': docID_to_url[key], 'length': docID_to_length[key]}
+        docID_to[key] = [docID_to_url[key], docID_to_length[key]]
 
     result = {'dictionary': dictionary, 'docID_to': docID_to}
 

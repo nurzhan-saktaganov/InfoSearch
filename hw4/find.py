@@ -24,7 +24,8 @@ DOC_LENGTH = 1
 # documents_rank
 BM25 = 0
 PASSAGE = 1
-TERMS = 2
+FINAL = 2
+TERMS = 3
 
 TOP_N = 10
 
@@ -33,13 +34,30 @@ b = 0.75
 k1 = 2.0
 
 # PASSAGE
+# c_w - completeness weight
+# dfb_w - distance from begining of the document weight
+# d_w - density weight
+# tfidf_w - tf-idf weight
+# wo_w - word order weight
+c_w = 1.0
+dfb_w = 1.0
+d_w = 1.0
+tfifd_w = 1.0
+wo_w = 1.0
 
+# Final 
+# W_bm25 - weight of BM25
+# W_p - weight of best passage
+W_bm25 = 1.0
+W_p = 1.0
 
 # df - document frequency, dc - document count
-get_idf = lambda df, dc:  math.log10(1.0 * dc / df)
+_idf = lambda df, dc:  math.log10(1.0 * dc / df)
 
-get_BM25 = lambda tf, idf, L, k1, b: \
+_BM25 = lambda tf, idf, L, k1, b: \
     tf * idf / (tf + k1 * (b + L * (1.0 - b)))
+
+_density = lambda _list: sum([1.0 / (_list[i + 1] - _list[i]) for i in range(len(_list) - 1)])
 
 # -p / --prepared - <prepared data file, output of prepare_data.py>
 # -i / --index - <raw index file>
@@ -96,6 +114,7 @@ def main():
         terms = [term for term in request.split(' ') if term != '' ]
 
         # documents_rank {'doc_id':[BM25, PASSAGE, {<term>: positions}}}
+        # upd 1. documents_rank {'doc_id': [BM25, PASSAGE, FINAL, {<term>: position-list}]}
         documents_rank = {}
 
         # BM25 ranking
@@ -108,7 +127,7 @@ def main():
 
             # document frequency of term
             df = int(df)
-            idf = get_idf(df=df, dc=dc)
+            idf = _idf(df=df, dc=dc)
 
             doc_ids = decoder.decode(encoded_doc_ids, from_diff=True)
             tfs = decoder.decode(encoded_tfs, from_diff=False)
@@ -117,9 +136,9 @@ def main():
 
             for i in range(len(doc_ids)):
                 L = docID_to[doc_ids[i]][DOC_LENGTH]
-                rank_BM25 = get_BM25(tf=tfs[i],idf=idf,L=L,k1=k1,b=b)
+                rank_BM25 = _BM25(tf=tfs[i],idf=idf,L=L,k1=k1,b=b)
                 if doc_ids[i] not in documents_rank:
-                    documents_rank[doc_ids[i]] = [rank_BM25, 0.0, {term:lists_of_positions[i]}]
+                    documents_rank[doc_ids[i]] = [rank_BM25, 0.0, 0.0, {term:lists_of_positions[i]}]
                 else:
                     documents_rank[doc_ids[i]][BM25] += rank_BM25
                     documents_rank[doc_ids[i]][TERMS][term] = lists_of_positions[i]
@@ -141,11 +160,13 @@ def main():
 
         # passage algorithm
         # TODO
+        # sliding_window : {term: pos | -1}
         for doc_id in documents_rank.keys():
             sliding_window = {}
             for term in terms:
                 sliding_window[term] = -1
-            print sliding_window
+            # sliding_window {term: position}
+            print sliding_window # delete
 
             position_to_term = {}
             for term, positions in documents_rank[doc_id][TERMS].iteritems():
@@ -157,19 +178,28 @@ def main():
             for position in sorted(position_to_term.keys()):
                 term = position_to_term[position]
                 sliding_window[term] = position
-                #print sliding_window
-                current_passage = 0.0
+                sliding_window_positions = sorted([pos for pos in sliding_window.values() if pos != -1])
+                print sliding_window # delete
+                completeness = 1.0 * len(sliding_window_positions) / len(sliding_window)
+
+                density = _density(_list=sliding_window_positions)
+                
+                print completeness
+                print density
+
+                current_passage = c_w * completeness + d_w * density
                 max_passage = max(max_passage, current_passage)
 
             documents_rank[doc_id][PASSAGE] = max_passage
 
             #print output
 
-
-
         # here we can assess final ranking sorting by final rank 
 
         #print documents_rank
+        for doc_id in documents_rank.keys():
+            documents_rank[doc_id][FINAL] = \
+                    W_bm25 * documents_rank[doc_id][BM25] + W_p * documents_rank[doc_id][PASSAGE]
 
 
 def good_bye(signal,frame):
