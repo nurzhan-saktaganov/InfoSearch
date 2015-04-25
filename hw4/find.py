@@ -59,9 +59,12 @@ _BM25 = lambda tf, idf, L, k1, b: \
 
 _density = lambda _list: sum([1.0 / (_list[i + 1] - _list[i]) for i in range(len(_list) - 1)])
 
+_inversions = lambda _list: sum([1 for i in range(len(_list)) for j in range(i + 1, len(_list)) if _list[j] < _list[i]])
+
 # -p / --prepared - <prepared data file, output of prepare_data.py>
 # -i / --index - <raw index file>
 # -e / --estimates - <output of evolution trainer>
+# -d / --direct - <direct index file>
 # -c / --compress - <compressing algorithm, default='VarByte'>
 
 def get_args():
@@ -74,6 +77,8 @@ def get_args():
         dest='index', required=True, type=str)
     parser.add_argument('-e','--estimates', help='output of evolution_trainer.py',\
         dest='estimates', required=True, type=str,metavar='<estimates file path>')
+    #parser.add_argument('-d','--direct', help='direct index, output of doc_len_and_direct_index.py',\
+    #    dest='direct', required=True, type=str, metavar='<direct index file path>')
     parser.add_argument('-c', '--compress',\
         help='compressing algorithm: default=VarByte',\
         dest='compress', required=False, default='VarByte', type=str,\
@@ -178,16 +183,19 @@ def main():
             for position in sorted(position_to_term.keys()):
                 term = position_to_term[position]
                 sliding_window[term] = position
-                sliding_window_positions = sorted([pos for pos in sliding_window.values() if pos != -1])
+                sliding_window_positions = [pos for pos in sliding_window.values() if pos != -1]
                 print sliding_window # delete
-                completeness = 1.0 * len(sliding_window_positions) / len(sliding_window)
+                print sliding_window_positions
 
-                density = _density(_list=sliding_window_positions)
-                
+                completeness = 1.0 * len(sliding_window_positions) / len(sliding_window)
+                density = _density(_list=sorted(sliding_window_positions))
+                inversions = _inversions(_list=sliding_window_positions)
+
+                print inversions
                 print completeness
                 print density
 
-                current_passage = c_w * completeness + d_w * density
+                current_passage = c_w * completeness + d_w * density + wo_w * 1.0 / (inversions + 1)
                 max_passage = max(max_passage, current_passage)
 
             documents_rank[doc_id][PASSAGE] = max_passage
@@ -200,6 +208,10 @@ def main():
         for doc_id in documents_rank.keys():
             documents_rank[doc_id][FINAL] = \
                     W_bm25 * documents_rank[doc_id][BM25] + W_p * documents_rank[doc_id][PASSAGE]
+
+        final_ranking = sorted([(doc_id, documents_rank[doc_id][FINAL]) for doc_id in documents_rank.keys()],\
+                                key=lambda value: value[1], reverse=True)
+        print final_ranking
 
 
 def good_bye(signal,frame):
