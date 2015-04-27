@@ -7,7 +7,8 @@ class DictionaryBuilder:
         while line:
             splitted = line.split('\t')
             size = len(line)
-            dictionary[splitted[0].decode('utf-8')] = [offset, size - 1]
+            # splitted[1] is document frequency of term
+            dictionary[splitted[0].decode('utf-8')] = [offset, size - 1, int(splitted[1])]
             offset += size
             line = f.readline()
 

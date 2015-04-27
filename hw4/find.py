@@ -11,15 +11,23 @@ import Simple9
 
 import math
 
+import base64
+import zlib
+
+from collections import Counter
+
 __author__ = 'Nurzhan Saktaganov'
 
 # dictionary
-OFFSET = 0
-SIZE = 1
+DIC_OFFSET = 0
+DIC_SIZE = 1
+DIC_DOCUMENT_FREQUENCY = 2
 
 #docID_to
 DOC_URL = 0
 DOC_LENGTH = 1
+DOC_OFFSET = 2
+DOC_SIZE = 3
 
 # documents_rank
 BM25 = 0
@@ -42,7 +50,7 @@ k1 = 2.0
 c_w = 1.0
 dfb_w = 1.0
 d_w = 1.0
-tfifd_w = 1.0
+tfidf_w = 1.0
 wo_w = 1.0
 
 # Final 
@@ -61,41 +69,56 @@ _density = lambda _list: sum([1.0 / (_list[i + 1] - _list[i]) for i in range(len
 
 _inversions = lambda _list: sum([1 for i in range(len(_list)) for j in range(i + 1, len(_list)) if _list[j] < _list[i]])
 
+def _passage_tfidf(doc_id, forward_index, dictionary, docID_to, positions, dc, text):
+    begin = min(positions)
+    end = max(positions)
+
+    passage = text[begin: end + 1]
+    terms_dictionary = Counter(passage)
+
+    tfidf = 0.0
+    for term in terms_dictionary.keys():
+        df = dictionary[term][DIC_DOCUMENT_FREQUENCY]
+        # tf is term frequency in passage
+        tf = terms_dictionary[term]
+        tfidf += tf * _idf(df=df,dc=dc)
+    return tfidf
+
 # -p / --prepared - <prepared data file, output of prepare_data.py>
-# -i / --index - <raw index file>
-# -e / --estimates - <output of evolution trainer>
-# -d / --direct - <direct index file>
+# -i / --invert - <inverted index file>
+# -e / --estimates - <output of evolution_trainer.py>
+# -f / --forward - <forward index file>
 # -c / --compress - <compressing algorithm, default='VarByte'>
+
 
 def get_args():
     parser = argparse.ArgumentParser(\
         description='Blood Seeker searcher with ranks', epilog='by ' + __author__)
-    parser.add_argument('-p','--prepared',\
-        help='prepared data file, output of prepare_data.py',metavar='<prepared file path>',\
-        dest='prepared', required=True, type=str)
-    parser.add_argument('-i','--index', help='raw index file',metavar='<index file path>',\
-        dest='index', required=True, type=str)
-    parser.add_argument('-e','--estimates', help='output of evolution_trainer.py',\
-        dest='estimates', required=True, type=str,metavar='<estimates file path>')
-    #parser.add_argument('-d','--direct', help='direct index, output of doc_len_and_direct_index.py',\
-    #    dest='direct', required=True, type=str, metavar='<direct index file path>')
-    parser.add_argument('-c', '--compress',\
-        help='compressing algorithm: default=VarByte',\
-        dest='compress', required=False, default='VarByte', type=str,\
-        choices=['VarByte', 'Simple9'])
+    parser.add_argument('-p','--prepared',help='prepared data file, output of prepare_data.py',\
+        metavar='<prepared file path>', dest='prepared', required=True, type=str)
+    parser.add_argument('-i','--invert', help='inverted index file, output of mapper.py',
+        metavar='<inverted index file path>', dest='invert', required=True, type=str)
+    parser.add_argument('-e','--estimates', help='estimates file, output of evolution_trainer.py',\
+        metavar='<estimates file path>', dest='estimates', required=True, type=str)
+    parser.add_argument('-f','--forward', help='forward index file, output of forward_mapper.py',\
+        metavar='<forward index file path>', dest='forward', required=True, type=str)
+    parser.add_argument('-c', '--compress',help='compressing algorithm: default=VarByte',\
+        dest='compress', required=False, default='VarByte', type=str, choices=['VarByte', 'Simple9'])
     return parser.parse_args()
 
 def main():
     signal.signal(signal.SIGINT, good_bye)
     args = get_args()
     
+    print 'Loading...'
     with open(args.prepared) as f:
         prepared = pickle.load(f)
 
     dictionary = prepared['dictionary']
     docID_to = prepared['docID_to']
 
-    index = open(args.index, 'r')
+    inverted = open(args.invert, 'r')
+    forward = open(args.forward, 'r')
     #estimates = open(args.estimates, 'r')
 
     if args.compress == 'Simple9':
@@ -116,21 +139,23 @@ def main():
             print e
             continue
 
+        # list of terms from request
         terms = [term for term in request.split(' ') if term != '' ]
 
-        # documents_rank {'doc_id':[BM25, PASSAGE, {<term>: positions}}}
-        # upd 1. documents_rank {'doc_id': [BM25, PASSAGE, FINAL, {<term>: position-list}]}
+        # documents_rank {'doc_id': [BM25, PASSAGE, FINAL, {<term>: position-list}]}
         documents_rank = {}
 
         # BM25 ranking
         for term in terms:
             if term not in dictionary:
                 continue
-            index.seek(dictionary[term][OFFSET])
+            inverted.seek(dictionary[term][DIC_OFFSET])
             t, df, encoded_doc_ids, encoded_tfs, encoded_positions_lists = \
-                index.read(dictionary[term][SIZE]).split('\t')
+                inverted.read(dictionary[term][DIC_SIZE]).split('\t')
 
             # document frequency of term
+            # so, we can set df = dicitionary[term][DIC_DOCUMENT_FREQUENCY],
+            # but i think, df = int(df) is faster
             df = int(df)
             idf = _idf(df=df, dc=dc)
 
@@ -143,7 +168,8 @@ def main():
                 L = docID_to[doc_ids[i]][DOC_LENGTH]
                 rank_BM25 = _BM25(tf=tfs[i],idf=idf,L=L,k1=k1,b=b)
                 if doc_ids[i] not in documents_rank:
-                    documents_rank[doc_ids[i]] = [rank_BM25, 0.0, 0.0, {term:lists_of_positions[i]}]
+                    documents_rank[doc_ids[i]] = [0.0, 0.0, 0.0, {term:lists_of_positions[i]}]
+                    documents_rank[doc_ids[i]][BM25] = rank_BM25
                 else:
                     documents_rank[doc_ids[i]][BM25] += rank_BM25
                     documents_rank[doc_ids[i]][TERMS][term] = lists_of_positions[i]
@@ -180,6 +206,9 @@ def main():
 
             max_passage = 0.0
 
+            forward.seek(docID_to[doc_id][DOC_OFFSET])
+            text = zlib.decompress(base64.b64decode(forward.read(docID_to[doc_id][DOC_SIZE]).strip().split('\t')[2])).decode('utf-8').split(' ')
+
             for position in sorted(position_to_term.keys()):
                 term = position_to_term[position]
                 sliding_window[term] = position
@@ -191,11 +220,14 @@ def main():
                 density = _density(_list=sorted(sliding_window_positions))
                 inversions = _inversions(_list=sliding_window_positions)
 
+                passage_tfidf = _passage_tfidf(doc_id=doc_id,forward_index=forward,dictionary=dictionary,\
+                    docID_to=docID_to,positions=sliding_window_positions,dc=dc, text=text)
+
                 print inversions
                 print completeness
                 print density
 
-                current_passage = c_w * completeness + d_w * density + wo_w * 1.0 / (inversions + 1)
+                current_passage = c_w * completeness + d_w * density + wo_w * 1.0 / (inversions + 1) + tfidf_w * passage_tfidf
                 max_passage = max(max_passage, current_passage)
 
             documents_rank[doc_id][PASSAGE] = max_passage
@@ -217,7 +249,6 @@ def main():
 def good_bye(signal,frame):
     print '\nSee You!'
     exit()
-
 
 if __name__ == '__main__':
     main()
