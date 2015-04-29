@@ -175,6 +175,8 @@ def main():
         else:
             begin = time.clock()
             population = genetic.get_population()
+            documents_rank = {}
+            term_to = {}
 
         fitness = [0.0] * len(population)
         print 'Iteration %d/%d (%.2f%%)' % (generation + 1, settings['MAX_GENERATIONS'], 100.0 * generation / settings['MAX_GENERATIONS'])
@@ -195,84 +197,87 @@ def main():
                 del marks[request]
                 continue
 
-            # documents_rank {'doc_id': [BM25, PASSAGE[1..POP_SIZE], FINAL[1..POP_SIZE], {<term>: position-list}]}
-            documents_rank = {}
+            if generation == 0:
+                # documents_rank 'request': {'doc_id': [BM25, PASSAGE[1..POP_SIZE], FINAL[1..POP_SIZE], {<term>: position-list}]}
+                documents_rank[request] = {}
 
-            term_to = {}
-            for term in request_terms:
-                if term in term_to:
-                    term_to[term][TO_COUNT] += 1
-                else:
-                    term_to[term] = [None, None]
-                    term_to[term][TO_COUNT] = 1
+                term_to[request] = {}
+                for term in request_terms:
+                    if term in term_to[request]:
+                        term_to[request][term][TO_COUNT] += 1
+                    else:
+                        term_to[request][term] = [None, None]
+                        term_to[request][term][TO_COUNT] = 1
 
             # BM25 ranking
             #begin = time.clock()
-            for term in request_terms:
-                inverted.seek(dictionary[term][DIC_OFFSET])
-                t, df, encoded_doc_ids, encoded_tfs, encoded_positions_lists = \
-                    inverted.read(dictionary[term][DIC_SIZE]).split('\t')
+            if generation == 0:
+                for term in request_terms:
+                    inverted.seek(dictionary[term][DIC_OFFSET])
+                    t, df, encoded_doc_ids, encoded_tfs, encoded_positions_lists = \
+                        inverted.read(dictionary[term][DIC_SIZE]).split('\t')
 
-                # document frequency of term
-                # so, we can set df = dicitionary[term][DIC_DOCUMENT_FREQUENCY],
-                # but i think, df = int(df) is faster
-                df = int(df)
-                idf = _idf(df=df, dc=dc)
-                term_to[term][TO_IDF] = idf
+                    # document frequency of term
+                    # so, we can set df = dicitionary[term][DIC_DOCUMENT_FREQUENCY],
+                    # but i think, df = int(df) is faster
+                    df = int(df)
+                    idf = _idf(df=df, dc=dc)
+                    term_to[request][term][TO_IDF] = idf
 
-                doc_ids = decoder.decode(encoded_doc_ids, from_diff=True)
-                tfs = decoder.decode(encoded_tfs, from_diff=False)
-                #lists_of_positions = [decoder.decode(encoded_positions_list, from_diff=True)\
-                #                for encoded_positions_list in encoded_positions_lists.split(',')]
-                encoded_lists_of_positions = encoded_positions_lists.split(',')
+                    doc_ids = decoder.decode(encoded_doc_ids, from_diff=True)
+                    tfs = decoder.decode(encoded_tfs, from_diff=False)
+                    #lists_of_positions = [decoder.decode(encoded_positions_list, from_diff=True)\
+                    #                for encoded_positions_list in encoded_positions_lists.split(',')]
+                    encoded_lists_of_positions = encoded_positions_lists.split(',')
 
-                for i in range(len(doc_ids)):
-                    L = docID_to[doc_ids[i]][DOC_LENGTH]
-                    rank_BM25 = _BM25(tf=tfs[i],idf=idf,L=L,k1=k1,b=b)
-                    if doc_ids[i] not in documents_rank:
-                        documents_rank[doc_ids[i]] = [0.0, [0.0] * len(population), [0.0] * len(population), {term: encoded_lists_of_positions[i]}]
-                        documents_rank[doc_ids[i]][BM25] = rank_BM25
-                    else:
-                        documents_rank[doc_ids[i]][BM25] += rank_BM25
-                        documents_rank[doc_ids[i]][TERMS][term] = encoded_lists_of_positions[i]
+                    for i in range(len(doc_ids)):
+                        L = docID_to[doc_ids[i]][DOC_LENGTH]
+                        rank_BM25 = _BM25(tf=tfs[i],idf=idf,L=L,k1=k1,b=b)
+                        if doc_ids[i] not in documents_rank[request]:
+                            documents_rank[request][doc_ids[i]] = [0.0, [0.0] * len(population), [0.0] * len(population), {term: encoded_lists_of_positions[i]}]
+                            documents_rank[request][doc_ids[i]][BM25] = rank_BM25
+                        else:
+                            documents_rank[request][doc_ids[i]][BM25] += rank_BM25
+                            documents_rank[request][doc_ids[i]][TERMS][term] = encoded_lists_of_positions[i]
 
-            #print 'BM25: ' + str(time.clock() - begin)
-            # here we can assess boolean retrieval sorting by doc_id
+                #print 'BM25: ' + str(time.clock() - begin)
+                # here we can assess boolean retrieval sorting by doc_id
 
-            # get TOP_N of BM25
-            #begin = time.clock()
-            border = sorted(list(set([document_rank[BM25] for document_rank in documents_rank.values()])), reverse=True)[:TOP_N][-1]
+                # get TOP_N of BM25
+                #begin = time.clock()
+                #border = sorted(list(set([document_rank[BM25] for document_rank in documents_rank.values()])), reverse=True)[:TOP_N][-1]
+                border = sorted(list(set([documents_rank[request][doc_id][BM25] for doc_id in documents_rank[request].keys()])), reverse=True)[:TOP_N][-1]
 
-            for doc_id in documents_rank.keys():
-                if documents_rank[doc_id][BM25] < border:
-                    del documents_rank[doc_id]
+                for doc_id in documents_rank[request].keys():
+                    if documents_rank[request][doc_id][BM25] < border:
+                        del documents_rank[request][doc_id]
 
-            #print 'del: ' + str(time.clock() - begin)
-            # here we can assess pure bm25 ranking sorting by BM25 value
-            # passage algorithm
-            # TODO
-            # sliding_window : {term: pos | -1}
-            #begin = time.clock()
+                #print 'del: ' + str(time.clock() - begin)
+                # here we can assess pure bm25 ranking sorting by BM25 value
+                # passage algorithm
+                # TODO
+                # sliding_window : {term: pos | -1}
+                #begin = time.clock()
 
-            # decode list of positions each term in each document
-            for doc_id in documents_rank.keys():
-                for term in documents_rank[doc_id][TERMS].keys():
-                    documents_rank[doc_id][TERMS][term] = decoder.decode(documents_rank[doc_id][TERMS][term], from_diff=True)
-            #print 'decode: ' + str(time.clock() - begin)
+                # decode list of positions each term in each document
+                for doc_id in documents_rank[request].keys():
+                    for term in documents_rank[request][doc_id][TERMS].keys():
+                        documents_rank[request][doc_id][TERMS][term] = decoder.decode(documents_rank[request][doc_id][TERMS][term], from_diff=True)
+                #print 'decode: ' + str(time.clock() - begin)
 
 
             #begin = time.clock()
 
             sliding_window = [[request_terms[i], None ] for i in range(len(request_terms))]
             # PASSAGE REGION
-            for doc_id in documents_rank.keys():
+            for doc_id in documents_rank[request].keys():
                 # reinit sliding window for this document
                 for i in range(len(sliding_window)):
                     sliding_window[i][SL_POSITION] = -1
 
                 # just for current document
                 position_to_term = {}
-                for term, positions in documents_rank[doc_id][TERMS].iteritems():
+                for term, positions in documents_rank[request][doc_id][TERMS].iteritems():
                     for position in positions:
                         position_to_term[position] = term
 
@@ -296,7 +301,7 @@ def main():
                             passage_tfidf = 0.0
                             for current_position in sliding_window_positions:
                                 current_term = position_to_term[current_position]
-                                passage_tfidf += term_to[current_term][TO_IDF] * term_to[current_term][TO_COUNT]
+                                passage_tfidf += term_to[request][current_term][TO_IDF] * term_to[request][current_term][TO_COUNT]
 
                             current_passage = [0.0] * len(population)
 
@@ -308,7 +313,7 @@ def main():
 
                                 max_passage[k] = max(max_passage[k], current_passage[k])
 
-                documents_rank[doc_id][PASSAGE] = max_passage[:]
+                documents_rank[request][doc_id][PASSAGE] = max_passage[:]
 
                 #print output
             #print 'PASSGE: ' + str(time.clock() - begin)
@@ -316,15 +321,15 @@ def main():
 
             #print documents_rank
             #begin = time.clock()
-            for doc_id in documents_rank.keys():
+            for doc_id in documents_rank[request].keys():
                 for i in range(len(population)):
-                    documents_rank[doc_id][FINAL][i] = \
-                            W_bm25 * documents_rank[doc_id][BM25] + W_p * documents_rank[doc_id][PASSAGE][i]
+                    documents_rank[request][doc_id][FINAL][i] = \
+                            W_bm25 * documents_rank[request][doc_id][BM25] + W_p * documents_rank[request][doc_id][PASSAGE][i]
             #print 'calculate final rank: ' + str(time.clock() - begin)
 
             #begin = time.clock()
-            final_ranking = sorted([(doc_id, documents_rank[doc_id][FINAL]) for doc_id in documents_rank.keys()],\
-                                    key=lambda value: value[1], reverse=True)
+            #final_ranking = sorted([(doc_id, documents_rank[doc_id][FINAL]) for doc_id in documents_rank.keys()],\
+            #                        key=lambda value: value[1], reverse=True)
             #print 'sort: ' + str(time.clock() - begin)
 
             #begin = time.clock()
@@ -334,7 +339,7 @@ def main():
             exception_flag = False
             for i in range(len(population)):
 
-                final_ranking = sorted([(doc_id, documents_rank[doc_id][FINAL][i]) for doc_id in documents_rank.keys()],\
+                final_ranking = sorted([(doc_id, documents_rank[request][doc_id][FINAL][i]) for doc_id in documents_rank[request].keys()],\
                                     key=lambda value: value[1], reverse=True)
 
                 final_result = [docID_to[doc_id][DOC_URL] for doc_id, rank in final_ranking]
@@ -347,11 +352,12 @@ def main():
 
             if exception_flag:
                 del marks[request]
+                del documents_rank[request]
                 #print 'Request has removed'
 
         #fitness.append(species_fitness)
 
-    print 'Marks after training: ' + str(len(marks.keys()))
+    #print 'Marks after training: ' + str(len(marks.keys()))
 
 
 def good_bye(signal,frame):
