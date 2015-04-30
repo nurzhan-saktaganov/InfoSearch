@@ -18,14 +18,14 @@ def get_args():
     parser.add_argument('-u', '--urls', help='urls file', metavar='<file with urls>',\
         dest='urls', required=True, type=str)
     parser.add_argument('-o', '--output', help='output, filtered marks', metavar='<output>',\
-        dest='output', required=True, type=str, default='output.marks')
+        dest='output', required=False, type=str, default='output.marks')
     return parser.parse_args()
 
 def main():
     args = get_args()
 
-    get_url = lambda line: line.strip().split('\t')[1].split('?')[0]
-    normalize = lambda url: url[:-1] if url[-1] == '/' else url
+    get_url = lambda line: line.strip().split('\t')[1]
+    normalize = lambda url: url[:-1] if url.count('/') > 3 and url.count('?') == 0 and url[-1] == '/' else url
 
     with open(args.urls, 'r') as f:
         url_filter = [normalize(get_url(line)) for line in f]

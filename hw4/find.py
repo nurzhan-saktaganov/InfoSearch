@@ -12,9 +12,8 @@ import Simple9
 import math
 
 import base64
-import zlib
+import zlib # for forward index
 
-from collections import Counter
 import time
 
 __author__ = 'Nurzhan Saktaganov'
@@ -76,23 +75,6 @@ _BM25 = lambda tf, idf, L, k1, b: \
 _density = lambda _list: sum([1.0 / (_list[i + 1] - _list[i]) for i in range(len(_list) - 1)])
 
 _inversions = lambda _list: sum([1 for i in range(len(_list)) for j in range(i + 1, len(_list)) if _list[j] <= _list[i]])
-
-
-def _passage_tfidf(doc_id, forward_index, dictionary, docID_to, positions, dc, text):
-    return 0.0
-    begin = min(positions)
-    end = max(positions)
-
-    passage = text[begin: end + 1]
-    terms_dictionary = Counter(passage)
-
-    tfidf = 0.0
-    for term in terms_dictionary.keys():
-        df = dictionary[term][DIC_DOCUMENT_FREQUENCY]
-        # tf is term frequency in passage
-        tf = terms_dictionary[term]
-        tfidf += tf * _idf(df=df,dc=dc)
-    return tfidf
 
 # -p / --prepared - <prepared data file, output of prepare_data.py>
 # -i / --invert - <inverted index file>

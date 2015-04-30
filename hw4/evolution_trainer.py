@@ -96,8 +96,8 @@ def main():
     population = genetic.get_population()
 
     for generation in range(settings['MAX_GENERATIONS']):
-        status = 1.0 * generation / settings['MAX_GENERATIONS']
-        print 'Iteration %d of %d (%.2f%%)' % (generation, settings['MAX_GENERATIONS'], status)
+        status = 100.0 * (generation + 1) / settings['MAX_GENERATIONS']
+        print 'Iteration %d of %d (%.2f%%)' % (generation + 1, settings['MAX_GENERATIONS'], status)
         begin = time.clock()
         fitness = [0.0] * len(population)
 

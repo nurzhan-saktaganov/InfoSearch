@@ -24,6 +24,8 @@ LENGTH = 1
 OFFSET = 2
 SIZE = 3
 
+normalize = lambda url: url[:-1] if url.count('/') > 3 and url.count('?') == 0 and url[-1] == '/' else url
+
 def get_args():
     parser = argparse.ArgumentParser(\
         description='Prepare data for searcher', epilog='by ' + __author__)
@@ -48,7 +50,7 @@ def main():
             doc_id, url = line.strip().split('\t')
             # TODO normalize url
             docID_to[int(doc_id)] = [None, None, None, None]
-            docID_to[int(doc_id)][URL] = url
+            docID_to[int(doc_id)][URL] = normalize(url)
 
     with open(args.forward, 'r') as f:
         offset, line = 0, f.readline()

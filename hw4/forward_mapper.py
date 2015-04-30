@@ -17,6 +17,9 @@ def main():
     script_cleaner = lxml.html.clean.Cleaner(scripts=True,javascript=True\
         ,comments=True,style=True,links=True,meta=False, remove_tags=['a', 'img']) #,kill_tags=['script','style'])
 
+    with open(sys.argv[1], 'r') as f:
+        stop_words = [word.strip().decode('utf-8') for word in f.readlines()]
+
     for line in sys.stdin:
         doc_id, html_b64encoded = line.split('\t')
 
@@ -27,7 +30,7 @@ def main():
         document = lxml.html.document_fromstring(html_noscript)
         text = " ".join(lxml.etree.XPath("//text()")(document)).lower()
 
-        words = re.findall(SPLIT_RGX, text)
+        words = [word for word in re.findall(SPLIT_RGX, text) if word not in stop_words]
 
         output = ''
         for word in words:
