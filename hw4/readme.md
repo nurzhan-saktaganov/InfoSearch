@@ -45,6 +45,7 @@
 
 # Предобработка прямого и обратного индексов
 ### prepare_data.py - подготовка словаря и других мета-данных
+	Параметры:
     -h, --help - вывод help
     -i <inverted index>, --invert <inverted index> - файл с обратным индексом
     -u <urls file>, --urls <urls file> - файл cо списком пар doc_id url
@@ -55,6 +56,7 @@
 
 # Эволюционный подбор параметров
 ### prepare_evolution_trainer.py - подготовка данных для эволюционного поиска
+    Параметры:
     -h, --help - вывод help
     -p <prepared file path>, --prepared <prepared file path> - файл результата prepare_data.py
     -i <inverted index>, --invert <inverted index> - файл с обратным индексом
@@ -64,6 +66,7 @@
     -o <output>, --output <output> - файл, в который пишется результат
 
 ### evolution_trainer.py - эволюционный подбор параметров
+    Параметры:
     -h, --help - вывод help
     -t <train file>, --train <train file> - файл результата prepare_evolution_trainer.py
     -s <settings file>, --settings <settings file> - файл настроек эволюционного подбора
@@ -81,6 +84,7 @@
     
 # Поиск
 ### find.py - утилита поиска
+    Параметры:
     -h, --help - вывод help
     -p <prepared file path>, --prepared <prepared file path> - файл результата prepare_data.py
     -i <inverted index>, --invert <inverted index> - файл с обратным индексом
