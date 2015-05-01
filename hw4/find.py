@@ -93,7 +93,7 @@ def get_args():
     parser.add_argument('-e','--estimates', help='estimates file, output of evolution_trainer.py',\
         metavar='<estimates file path>', dest='estimates', required=True, type=str)
     parser.add_argument('-f','--forward', help='forward index file, output of forward_mapper.py',\
-        metavar='<forward index file path>', dest='forward', required=True, type=str)
+        metavar='<forward index file path>', dest='forward', required=False, type=str, default=None)
     parser.add_argument('-c', '--compress',help='compressing algorithm: default=VarByte',\
         dest='compress', required=False, default='VarByte', type=str, choices=['VarByte', 'Simple9'])
     return parser.parse_args()
@@ -101,17 +101,27 @@ def get_args():
 def main():
     signal.signal(signal.SIGINT, good_bye)
     args = get_args()
+
+    with open(args.estimates, 'r') as f:
+        max_estimate = 0.0
+        for line in f:
+            current_estimate = float(line.strip().split(' ')[-1])
+            if current_estimate <= max_estimate:
+                continue
+            max_estimate = current_estimate
+            c_w, dfb_w, d_w, tfidf_w, wo_w = map(float, line.strip().split(' ')[:-1])
+        #print '%f %f %f %f %f %f' % (c_w, dfb_w, d_w, tfidf_w, wo_w, max_estimate)
     
     print 'Loading...'
-    with open(args.prepared) as f:
+    with open(args.prepared, 'r') as f:
         prepared = pickle.load(f)
 
     dictionary = prepared['dictionary']
     docID_to = prepared['docID_to']
 
     inverted = open(args.invert, 'r')
-    forward = open(args.forward, 'r')
-    #estimates = open(args.estimates, 'r')
+    if args.forward != None:
+        forward = open(args.forward, 'r')
 
     if args.compress == 'Simple9':
         decoder = Simple9.Simple9
@@ -156,9 +166,6 @@ def main():
             t, df, encoded_doc_ids, encoded_tfs, encoded_positions_lists = \
                 inverted.read(dictionary[term][DIC_SIZE]).split('\t')
 
-            # document frequency of term
-            # so, we can set df = dicitionary[term][DIC_DOCUMENT_FREQUENCY],
-            # but i think, df = int(df) is faster
             df = int(df)
             idf = _idf(df=df, dc=dc)
             term_to[term][TO_IDF] = idf
@@ -179,7 +186,7 @@ def main():
                     documents_rank[doc_ids[i]][BM25] += rank_BM25
                     documents_rank[doc_ids[i]][TERMS][term] = encoded_lists_of_positions[i]
 
-        print 'BM25: ' + str(time.clock() - begin)
+        #print 'BM25: ' + str(time.clock() - begin)
         # here we can assess boolean retrieval sorting by doc_id
 
         # get TOP_N of BM25
@@ -190,7 +197,7 @@ def main():
             if documents_rank[doc_id][BM25] < border:
                 del documents_rank[doc_id]
 
-        print 'del: ' + str(time.clock() - begin)
+        #print 'del: ' + str(time.clock() - begin)
         # here we can assess pure bm25 ranking sorting by BM25 value
         # passage algorithm
         # TODO
@@ -201,7 +208,7 @@ def main():
         for doc_id in documents_rank.keys():
             for term in documents_rank[doc_id][TERMS].keys():
                 documents_rank[doc_id][TERMS][term] = decoder.decode(documents_rank[doc_id][TERMS][term], from_diff=True)
-        print 'decode: ' + str(time.clock() - begin)
+        #print 'decode: ' + str(time.clock() - begin)
 
 
         begin = time.clock()
@@ -249,7 +256,7 @@ def main():
             documents_rank[doc_id][PASSAGE] = max_passage
 
             #print output
-        print 'PASSGE: ' + str(time.clock() - begin)
+        #print 'PASSGE: ' + str(time.clock() - begin)
         # here we can assess final ranking sorting by final rank 
 
         #print documents_rank
@@ -257,18 +264,17 @@ def main():
         for doc_id in documents_rank.keys():
             documents_rank[doc_id][FINAL] = \
                     W_bm25 * documents_rank[doc_id][BM25] + W_p * documents_rank[doc_id][PASSAGE]
-        print 'calculate final rank: ' + str(time.clock() - begin)
+        #print 'calculate final rank: ' + str(time.clock() - begin)
 
         begin = time.clock()
         final_ranking = sorted([(doc_id, documents_rank[doc_id][FINAL]) for doc_id in documents_rank.keys()],\
                                 key=lambda value: value[1], reverse=True)
-        print 'sort: ' + str(time.clock() - begin)
+        #print 'sort: ' + str(time.clock() - begin)
 
         begin = time.clock()
         for doc_id, rank in final_ranking:
             print docID_to[doc_id][DOC_URL]
-        print 'print: ' + str(time.clock() - begin)
-
+        #print 'print: ' + str(time.clock() - begin)
 
 def good_bye(signal,frame):
     print '\nSee You!'
