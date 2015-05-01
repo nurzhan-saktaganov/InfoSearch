@@ -93,4 +93,54 @@
     Теперь не используется, необязательный параметр
     -c {VarByte,Simple9}, --compress {VarByte,Simple9} - метод сжатия в обратном индексе.
     Необязательный параметр, по умолчанию VarByte
-    
+
+# Анализ результатов
+### report_find.py - вспомогательная утилита
+	Параметры:
+    -h, --help - вывод help
+    -p <prepared file path>, --prepared <prepared file path> - файл результата prepare_data.py
+    -i <inverted index>, --invert <inverted index> - файл с обратным индексом
+    -e <estimates file>, --estimates <estimates file> - файл результата evolution_trainer.py
+    -f <forward index>,--forward <forward index> - файл с прямым индексом.
+    -m <filtered marks>, --marks <filtered marks> - файл результата filter_marks.py
+    -c {VarByte,Simple9}, --compress {VarByte,Simple9} - метод сжатия в обратном индексе.
+    Необязательный параметр, по умолчанию VarByte.
+
+    Стандартный вывод следует перенаправить в файл.
+
+### ../hw2/report_find.py - вспомогательная утилита
+	Параметры:
+    -h, --help - вывод help
+    -i <inverted index>, --invert <inverted index> - файл с обратным индексом (из hw2).
+    -u <urls file>, --urls <urls file> - файл cо списком пар doc_id url
+    -m <filtered marks>, --marks <filtered marks> - файл результата filter_marks.py
+	-d <файл со словарем>, выходной файл утилиты build_dictionary.py
+    -c {VarByte,Simple9}, --compress {VarByte,Simple9} - метод сжатия в обратном индексе.
+    Необязательный параметр, по умолчанию VarByte
+
+    Стандартный вывод следует перенаправить в файл.
+
+### analyze.py - анализатор
+	Параметры:
+    -h, --help - вывод help
+    -b <boolean result file>, --boolean <boolean result file> - файл со стандартным выводом
+    утилиты hw2/report_find.py
+    -n <bm25 and passage result file>, --notboolean <bm25 and passage result file> - файл
+    со стандартным выводом утилиты report_find.py
+
+    Выводит, таблицу, столбцы которой имеют следующие имена:
+    	METHOD - имя метода поиска
+    	TOTAL - количество запросов
+    	FOUND - количество запросов, в которых оценки асессоров входят в выдачу
+    	MEDIANA - медиана позиций оценок асессоров в выдаче
+    	MEAN - средняя позиция оценок асессоров в выдаче
+    	MIN - минимальная позиция оценок асессоров в выдаче
+    	MAX - максимальная позиция оценок асессоров в выдаче
+    	SCORE - сумма 1 / position, где position - позиция оценки асессора в выдаче. Если
+    	в выдаче ее нет, то ничего не прибавляем
+    	MEAN SCORE - SCORE / FOUND
+
+### analyzer_output.txt - вывод analyze.py
+	Для вычисления пассажного алгоритма брал топ-100 рангов выдачи bm25. Т.е. брал все ранги bm25,
+	унифицировал их, отсортировал по убыванию, взял первые 100 элементов, и за border взял последний
+	элемент этого списка. Потом из выдачи bm25 убиарл все результаты с rank < border.
