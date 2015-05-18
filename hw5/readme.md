@@ -14,7 +14,7 @@
 	На вход подавать выход reducer.py
 	
 ### ./PageRank/reducer.py - первичный и итеративный reducer
-	Также выполняет роль init_reducer.py для init_mapper.py
+	Также исполняет роль init_reducer.py для init_mapper.py
 	На вход подавать выход init_mapper.py или mapper.py
 	
 # Алгоритм HINTS
