@@ -9,24 +9,32 @@ D = 0.85
 
 def main():
 
+    previous_url, adjacency_list, page_rank = None, '{}', 0.0
+
     for line in sys.stdin:
         # remove last \n
-        line = line[:-1]
-        
-        # send structure
-        print line
+        splitted_line = line[:-1].decode('utf-8').split('\t')
 
-        current_url, page_rank, adjacency_list = line.decode('utf-8').split('\t')
+        current_url = splitted_line[0]
 
-        if adjacency_list == '{}':
-            continue
+        if current_url != previous_url and previous_url != None:
+            print_result(previous_url, (1.0 - D) + D * page_rank, adjacency_list)
+            adjacency_list = '{}'
+            page_rank = 0.0
 
-        adjacency_list = adjacency_list[1:-1].split(',')
+        # if structure
+        if len(splitted_line) == 3:
+            adjacency_list = splitted_line[2]
+        # else
+        elif len(splitted_line) == 2:
+            page_rank += float(splitted_line[1])
 
-        p = float(page_rank) / len(adjacency_list)
+        previous_url = current_url
 
-        for url in adjacency_list:
-            print ('%s\t%lf' % (url, p)).encode('utf-8')
+    print_result(previous_url, (1.0 - D) + D * page_rank, adjacency_list)
+
+def print_result(url, page_rank, adjacency_list):
+    print ('%s\t%lf\t%s' % (url, page_rank, adjacency_list)).encode('utf-8')
 
 if __name__ == '__main__':
     main()
