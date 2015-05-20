@@ -7,16 +7,22 @@ __author__ = 'Nurzhan Saktaganov'
 
 D = 0.85
 
+URL_SEPARATOR = ' '
+
 def main():
 
     for line in sys.stdin:
-    	# remove last \n
+        # remove last \n
         current_url, url_list = line[:-1].decode('utf-8').split('\t')
 
         # send structure
-        print ('%s\t%lf\t{%s}' % (current_url, 1.0 - D, url_list)).encode('utf-8') 
+        if url_list != ' ':
+            print ('%s\t%lf\t{%s}' % (current_url, 1.0 - D, url_list)).encode('utf-8')
+        else:
+            print ('%s\t%lf\t{}' % (current_url, 1.0 - D)).encode('utf-8')
+            continue
 
-        url_list = url_list.split(',')
+        url_list = url_list.split(URL_SEPARATOR)
 
         p = (1 - D) / len(url_list)
 
