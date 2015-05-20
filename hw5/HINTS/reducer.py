@@ -5,7 +5,6 @@ import sys
 
 __author__ = 'Nurzhan Saktaganov'
 
-
 def main():
     previous_url, authority, hub, to_list, from_list = None, 0, 0, None, None
 
