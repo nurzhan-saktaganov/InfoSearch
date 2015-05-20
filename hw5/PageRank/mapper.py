@@ -7,6 +7,8 @@ __author__ = 'Nurzhan Saktaganov'
 
 D = 0.85
 
+URL_SEPARATOR = ' '
+
 def main():
 
     for line in sys.stdin:
@@ -21,7 +23,7 @@ def main():
         if adjacency_list == '{}':
             continue
 
-        adjacency_list = adjacency_list[1:-1].split(',')
+        adjacency_list = adjacency_list[1:-1].split(URL_SEPARATOR)
 
         p = float(page_rank) / len(adjacency_list)
 
