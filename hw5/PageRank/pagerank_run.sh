@@ -12,7 +12,7 @@ hadoop jar /usr/lib/hadoop-mapreduce/hadoop-streaming.jar \
 	-reducer reducer.py \
 	-input ${INPUT} \
 	-output ${OUTPUT} \
-	-numReduceTasks 8
+	-numReduceTasks 16
 
 for ((i=1;i<=5;i++))
 do
@@ -26,7 +26,7 @@ do
 		-reducer reducer.py \
 		-input ${INPUT} \
 		-output ${OUTPUT} \
-		-numReduceTasks 8
+		-numReduceTasks 16
 		
 	hadoop fs -rm -r ${INPUT}
 done
