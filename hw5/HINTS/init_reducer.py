@@ -5,6 +5,8 @@ import sys
 
 __author__ = 'Nurzhan Saktaganov'
 
+URL_SEPARATOR = ' '
+
 def main():
     previous_url, to_list, from_list = None, '{}', []
 
@@ -30,7 +32,7 @@ def main():
 
 def print_result(url, to_list, from_list):
     # url authority hub to-list from-list
-    print ('%s\t1\t1\t%s\t{%s}' % (url, to_list, ','.join(from_list))).encode('utf-8')
+    print ('%s\t1\t1\t%s\t{%s}' % (url, to_list, URL_SEPARATOR.join(from_list))).encode('utf-8')
 
 if __name__ == '__main__':
     main()
