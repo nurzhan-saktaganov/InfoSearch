@@ -61,3 +61,32 @@
 ### ./result/top30HUB.txt - топ-30 урлов с максимальным хабом
 	Хаб в третьем столбце
 	Было сделано 5 итераций
+
+# Расположение данных
+### /user/n.saktaganov/hw5_raw_graph - "сырой" граф, список смежности
+	Формат данных:
+	<url><\tab><url-list>
+	, где url-list - <url1[<\space>url2[...]]>
+
+### /user/n.saktaganov/hw5_HINTS_Step_5 - результат алгоритма HITS после 5 шагов
+	Формат данных:
+	<url><\tab><authority><\tab><hub><\tab>{<out-url-list>}<\tab>{<in-url-list>}
+	, где <out-url-list> - <url-list> исходящих из данной вершины
+	, <in-url-list> - <url-list> входящих в данную вершину
+	
+### /user/n.saktaganov/hw5_PageRank_Step_5 - результат алгоритма PageRank после 5 шагов
+	Формат данных:
+	<url><\tab><authority><\tab><hub><\tab>{<out-url-list>}
+	, где <out-url-list> - <url-list> исходящих из данной вершины
+
+### /user/n.saktaganov/hw5_sorted_pr - отсортированный PageRank
+	Формат данных:
+	<url><\tab><pr><\tab>
+
+### /user/n.saktaganov/hw5_sorted_authority - отсортированная авторитетность:
+	Формат данных:
+	<url><\tab><authority><\tab><hub><\tab>
+
+### /user/n.saktaganov/hw5_sorted_hub - отсортированный хаб
+	Формат данных:
+	<url><\tab><authority><\tab><hub><\tab>
