@@ -17,17 +17,17 @@
 	Также исполняет роль init_reducer.py для init_mapper.py
 	На вход подавать выход init_mapper.py или mapper.py
 
-# Алгоритм HINTS
-### ./HINTS/init_mapper.py - первичный mapper
+# Алгоритм HITS
+### ./HITS/init_mapper.py - первичный mapper
 	На вход подавать выход std_mapper.py
 
-### ./HINTS/init_reducer.py - первичный reducer
+### ./HITS/init_reducer.py - первичный reducer
 	На вход подавать выход init_mapper.py
 
-### ./HINTS/mapper.py - итеративный mapper
+### ./HITS/mapper.py - итеративный mapper
 	На вход подавать выход init_reducer.py или reducer.py
 
-### ./HINTS/reducer.py - итеративный reducer
+### ./HITS/reducer.py - итеративный reducer
 	На вход подавать выход mapper.py
 
 # Релизация на примере сайта http://lenta.ru/
@@ -41,9 +41,9 @@
 	2.2 Запустить скрипт ./PageRank/sort_pagerank.sh (для сортировки по PR)
 	
 ### Этап 3. Вычисление авторитетов и хабов
-	3.1 Запустить скрипт ./HINTS/hints_run.sh (делает 5 итераций)
-	3.2 Запустить скрипт ./HINTS/sort_authority.sh
-	3.3 Запустить скрипт ./HINTS/sort_hub.sh
+	3.1 Запустить скрипт ./HITS/hits_run.sh (делает 5 итераций)
+	3.2 Запустить скрипт ./HITS/sort_authority.sh
+	3.3 Запустить скрипт ./HITS/sort_hub.sh
 	
 ### Этап 4. Получение топ-30
 	4.1 Запустить скрипт ./result/get_result.sh
