@@ -43,6 +43,7 @@ def get_args():
     # -u / --urls - <file with urls>
     # -b / --banned - <file with documents not to index>
     # -e / --endings - <file with endings>
+    # -s / --stopwords - <file with stop words>
     # * for future -p / --pageranks - <file with pageranks>
     # -o / --output - <output file>
     parser = argparse.ArgumentParser(\
@@ -57,6 +58,8 @@ def get_args():
         metavar='<banned documents file path>', dest='banned', required=False,type=str,default=None)
     parser.add_argument('-e', '--endings', help='word endings (suffixes)',\
         metavar='<endings file path>', dest='endings', required=True, type=str)
+    parser.add_argument('-s', '--stopwords', help='file with stop words',\
+        metavar='<stop words file path>', dest='stopwords', required=True, type=str)
     # * for future
     #parser.add_argument('-p', '--pageranks', help='pageranks file',\
     #    metavar='<pageranks file path>', dest='pageranks', required=True, type=str)
@@ -74,12 +77,15 @@ def main():
     with open(args.endings, 'r') as f:
         endings = sorted([ending.strip().decode('utf-8') for ending in f.readlines()])
 
-    prepared = {'docID_to': docID_to, 'dictionary': dictionary, 'endings': endings}
+    with open(args.stopwords, 'r') as f:
+        stop_words = [word.strip().decode('utf-8') for word in f.readlines()]
+
+    prepared = {'docID_to': docID_to, 'dictionary': dictionary, 'endings': endings, 'stop_words': stop_words}
 
     with open(args.output, 'w') as f:
         pickle.dump(prepared, f)
 
-
+    
 def build_docID_to(urls_path, forward_path, banned_path):
     docID_to, banned = {}, []
 
