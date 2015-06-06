@@ -37,7 +37,6 @@ IMAGE_MIN_HEIGHT = 200
 def get_args():
     # -c / --classifier - <file with classifier>
     # -x / --xpaths - <file with xpaths to delete>
-    # -s / --stopwords - <file with stop words>
     # -b / --banned - <file with documents not to index>
     # -e / --encode - <compressing algorithm, default='VarByte'>
     parser = argparse.ArgumentParser(\
@@ -46,8 +45,6 @@ def get_args():
         metavar='<classifier file path>', dest='classifier', required=True, type=str)
     parser.add_argument('-x', '--xpaths', help='file with xpaths to delete',\
         metavar='<xpaths file path>', dest='xpaths', required=False,type=str, default=None)
-    parser.add_argument('-s', '--stopwords', help='file with stop words',\
-        metavar='<stop words file path>', dest='stopwords', required=False, type=str, default=None)
     parser.add_argument('-b', '--banned', help='file with documents not to index',\
         metavar='<banned documents file path>', dest='banned', required=False,type=str,default=None)
     parser.add_argument('-e', '--encode',help='compressing algorithm: default=VarByte',\
@@ -61,7 +58,7 @@ def main():
     script_cleaner = lxml.html.clean.Cleaner(scripts=True,javascript=True,\
         comments=True,style=True,links=True,meta=False,remove_tags=['a', 'img']) #,kill_tags=['script','style'])
 
-    xpaths, stopwords, banned = [], [], []
+    xpaths, banned = [], []
 
     # better title xpath for lenta
     meta_content_title_xpath = '//meta[@property="og:title"]/@content'
@@ -86,11 +83,6 @@ def main():
     if args.xpaths != None:
         with open(args.xpaths, 'r') as f:
             xpaths = list(set([xpath.strip().decode('utf-8') for xpath in f.readlines()]))
-
-    # loading stop words
-    if args.stopwords != None:
-        with open(args.stopwords, 'r') as f:
-            stop_words = [word.strip().decode('utf-8') for word in f.readlines()]
 
     # loading banned documents list
     if args.banned != None:
