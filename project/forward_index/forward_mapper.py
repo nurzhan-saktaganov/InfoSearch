@@ -141,7 +141,7 @@ def main():
         text = re.sub(TARGET_RGX, ' ', text)
  
         sentences = split(classifier, text)
-        b64encoded_sentences = map(lambda sentence: base64.b64encode(sentence.encode('utf-8')), sentences)
+        b64encoded_sentences = map(lambda sentence: base64.b64encode(zlib.compress(sentence.encode('utf-8'))), sentences)
 
         current_position = 0
         sentences_begin_positions = []
