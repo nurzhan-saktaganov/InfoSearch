@@ -139,6 +139,7 @@ def main():
         text = " ".join(lxml.etree.XPath("//text()")(html_structure))
 
         text = re.sub(TARGET_RGX, ' ', text)
+ 
         sentences = split(classifier, text)
         b64encoded_sentences = map(lambda sentence: base64.b64encode(sentence.encode('utf-8')), sentences)
 
@@ -149,13 +150,15 @@ def main():
             words = re.findall(SPLIT_RGX, sentence)
             current_position += len(words)
 
+        document_length = current_position
+
         # output format
-        # <doc id><\tab><b64 encoded title><\tab>
+        # <doc id><\tab><document length><\tab><b64 encoded title><\tab>
         #   <comma separated base64 encoded list of img urls>
         #   <\tab><comma separated base64 encoded list of sentences>
         #   <\tab><encoded list of sentences begin positions>
 
-        output = doc_id + '\t' + b64encoded_title + '\t' \
+        output = doc_id + '\t' + str(document_length) + '\t' + b64encoded_title + '\t' \
                     + ','.join(images_url) + '\t' \
                     + ','.join(b64encoded_sentences) + '\t' \
                     + encoder.encode(sentences_begin_positions,to_diff=True)
