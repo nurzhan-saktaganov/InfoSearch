@@ -88,7 +88,8 @@ def main():
         text = " ".join(lxml.etree.XPath("//text()")(html_structure)).lower()
         # print lxml.html.tostring(html_structure).encode('utf-8')
 
-        words = [word for word in re.findall(SPLIT_RGX, text) if word not in stop_words]
+        #words = [word for word in re.findall(SPLIT_RGX, text) if word not in stop_words]
+        words = re.findall(SPLIT_RGX, text)
 
         stemmed_words = stemmer.stemWords(words)
         words_endings = [get_ending(words[i],stemmed_words[i]) for i in range(len(words))]
@@ -99,7 +100,10 @@ def main():
 
         for i in range(len(words)):
             word = stemmed_words[i]
-            if word not in term_to:
+            # words[i], cause word might not to be stop word
+            if words[i] in stop_words:
+                continue
+            elif word not in term_to:
                 term_to[word] = [None, None]
                 term_to[word][TO_POSITIONS] = [i]
                 term_to[word][TO_ENDING_ID] = [words_endings_id[i]]

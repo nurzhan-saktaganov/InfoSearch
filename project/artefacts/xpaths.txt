@@ -5,14 +5,9 @@
 //*[@id="root"]/section[2]
 //*[@id="root"]/div[2]/div/div[2]
 //*[@id="footer"]/div/div[2]
-//*[@id="root"]/div[2]/div/div[1]/div[1]/div/div[1]/div[1]/div[1]
 //*[@id="root"]/section[3]/div
-//*[@id="root"]/div[2]/div/div[1]/div[1]/div/section[2]
 //*[@id="root"]/div[2]/div/div[1]/div[1]/div/section[1]
 //*[@id="root"]/div[2]/div/div/div/div/section/h2
-//*[@id="root"]/div[2]/div/div/div/div/section/div[*]/h4
-//*[@id="root"]/div[2]/div/div/div/div/section/div[*]/time
 //*[@id="footer"]
 /html/head/title
-//*[@id="root"]/div[2]/div/div[1]/div[1]/div/section[2]/div[3]/time
-//*[@id="root"]/div[2]/div/div/div/article/section[2]/div[1]/time
+//*[@id="root"]/div[2]/div/div[1]/div/article/section[2]/div[1]

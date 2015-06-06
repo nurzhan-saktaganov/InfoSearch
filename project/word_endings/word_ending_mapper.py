@@ -80,7 +80,8 @@ def main():
         #print lxml.html.tostring(html_structure).encode('utf-8')
         #print ' '.join(stemmer.stemWords(lxml.html.tostring(html_structure).split())).encode('utf-8')
         text = " ".join(lxml.etree.XPath("//text()")(html_structure)).lower()
-        words = [word for word in re.findall(SPLIT_RGX, text) if word not in stop_words]
+        #words = [word for word in re.findall(SPLIT_RGX, text) if word not in stop_words]
+        words = re.findall(SPLIT_RGX, text)
 
         stemmed_words = stemmer.stemWords(words)
 
