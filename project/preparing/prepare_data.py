@@ -30,16 +30,19 @@ normalize_url = lambda url: url[:-1] if url.count('/') > 3 and url.count('?') ==
 idf = lambda df, dc: math.log10(1.0 * dc / df)
 
 
-# <output is {'dictionary': <dictionary>, 'docID_to: <docID_to>}'
+# <output is {'dictionary': <dictionary>, 'docID_to: <docID_to>, 'endings': <endings>}'
 # where
 #   <dictionary> is {<term>: [read_offset, read_size, idf]}
 #   <docID_to is> is {<doc_id>: [url, length, read_offset, read_size, pagerank, list-of-imgs-url]}
+#   <endings> is list-of-word-endings
 
 
 def get_args():
     # -i / --invert - <inverted index file>
     # -f / --forward - <forward index file>
     # -u / --urls - <file with urls>
+    # -b / --banned - <file with documents not to index>
+    # -e / --endings - <file with endings>
     # * for future -p / --pageranks - <file with pageranks>
     # -o / --output - <output file>
     parser = argparse.ArgumentParser(\
@@ -52,6 +55,8 @@ def get_args():
         metavar='<urls file path>', dest='urls', required=True, type=str)
     parser.add_argument('-b', '--banned', help='file with documents not to index',\
         metavar='<banned documents file path>', dest='banned', required=False,type=str,default=None)
+    parser.add_argument('-e', '--endings', help='word endings (suffixes)',\
+        metavar='<endings file path>', dest='endings', required=True, type=str)
     # * for future
     #parser.add_argument('-p', '--pageranks', help='pageranks file',\
     #    metavar='<pageranks file path>', dest='pageranks', required=True, type=str)
@@ -66,7 +71,10 @@ def main():
     docID_to = build_docID_to(urls_path=args.urls, forward_path=args.forward, banned_path=args.banned)
     dictionary = build_dictionary(inverted_path=args.inverted, documents_count=len(docID_to))
 
-    prepared = {'docID_to': docID_to, 'dictionary': dictionary}
+    with open(args.endings, 'r') as f:
+        endings = sorted([ending.strip().decode('utf-8') for ending in f.readlines()])
+
+    prepared = {'docID_to': docID_to, 'dictionary': dictionary, 'endings': endings}
 
     with open(args.output, 'w') as f:
         pickle.dump(prepared, f)
