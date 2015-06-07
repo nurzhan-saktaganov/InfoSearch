@@ -14,6 +14,9 @@ import snowballstemmer
 
 import heapq
 
+import base64
+import zlib
+
 __author__ = 'Nurzhan Saktaganov'
 
 # docID_to
@@ -87,10 +90,6 @@ def main():
     
     with open(args.prepared, 'r') as f:
         prepared = pickle.load(f)
-        dictionary = prepared['dictionary']
-        #docID_to = prepared['docID_to']
-        #endings = prepared['endings']
-        stop_words = prepared['stop_words']
 
     inverted = open(args.inverted, 'r')
     forward = open(args.forward, 'r')
@@ -112,16 +111,20 @@ def main():
             print e
             continue
 
-        # filter request terms by deleting stop words
-        request_terms = [term for term in request.split() \
-                            if term not in stop_words \
-                                and stemmer.stemWord(term) in dictionary]
+        
+        n_best = get_n_best(prepared, request, stemmer, inverted, decoder, n=100)
 
-        if len(request_terms) == 0:
+        if n_best == None:
             print 'No matches found!'
             continue
+        
+        # dpp - doc per page
+        page = 0
+        dpp = 1
+        begin = page * dpp
 
-        get_n_best(prepared, request_terms, stemmer, inverted, decoder, 15)
+        get_snippets(prepared, forward, decoder, documents=n_best[begin:begin + dpp])
+
         continue
 
         stemmed_request_terms = stemmer.stemWords(request_terms)
@@ -130,6 +133,67 @@ def main():
         print ' '.join(request_terms).encode('utf-8')
         print ' '.join(stemmed_request_terms).encode('utf-8')
         print '|'.join(request_terms_endings)
+
+
+
+def get_snippets(prepared, forward, decoder, documents):
+    docID_to = prepared['docID_to']
+
+    snippets = []
+
+    print documents
+
+    for doc_id, passage_info in documents:
+        forward.seek(docID_to[doc_id][DOC_READ_OFFSET])
+        # cs - comma separated
+        # b64 - base 64 encoded
+        # gzip - gzipped
+        # bp - begin positions
+        _, _, b64_title, cs_b64_imgs_url, cs_b64_gzip_sentences, encoded_sentences_bp = \
+            forward.read(docID_to[doc_id][DOC_READ_SIZE]).split('\t')
+
+        title = base64.b64decode(b64_title).decode('utf-8')
+        
+        if cs_b64_imgs_url != '0':
+            imgs_url = map(lambda b64url: base64.b64decode(b64url), cs_b64_imgs_url.split(','))
+        else:
+            imgs_url = []
+
+        sentences = map(lambda s: zlib.decompress(base64.b64decode(s)).decode('utf-8'), cs_b64_gzip_sentences.split(','))
+        sentences_bp = decoder.decode(encoded_sentences_bp, True)
+
+        #print '\n'.join(sentences)
+        #print sentences_bp
+        #print title
+        #print ' '.join(imgs_url)
+        #print len(sentences)
+
+        indices = []
+
+        for term_position, term_idf in passage_info.iteritems():
+            index = get_sentence_index(sentences_bp, term_position)
+            if index not in indices:
+                indices.append(index)
+
+        snippet = ' '.join([sentences[index] for index in indices])
+
+        print title.encode('utf-8')
+        print snippet.encode('utf-8')
+        print (snippet[:300] + '...').encode('utf-8')
+            
+        print '\n\n'
+
+def get_sentence_index(_list, elem):
+    low, high = 0, len(_list)
+    while low != high:
+        mid = (low + high) / 2
+        if _list[mid] <= elem:
+            low = mid + 1
+        else:
+            high = mid
+
+    return low - 1
+
 
 # for function get_best
 ### request_stemmed_term_to
@@ -141,6 +205,7 @@ DR_BM25 = 0
 DR_PASSAGE = 1
 DR_FINAL = 2
 DR_TERMS = 3
+DR_PASSAGE_INFO = 4
 DR_TERM_POSITIONS = 0
 DR_TERM_ENDINGS = 1
 
@@ -151,9 +216,18 @@ SL_STEMMED_TERM_POSITION = 1
 # returns {<doc id>: <best passage info>}
 # where
 # <best passage info> - {<term position>: <term idf>}
-def get_n_best(prepared, request_terms, stemmer, inverted, decoder, n):
+def get_n_best(prepared, request, stemmer, inverted, decoder, n):
     dictionary = prepared['dictionary']
     docID_to = prepared['docID_to']
+    stop_words = prepared['docID_to']
+
+    # filter request terms by deleting stop words
+    request_terms = [term for term in request.split() \
+                        if term not in stop_words \
+                            and stemmer.stemWord(term) in dictionary]
+
+    if len(request_terms) == 0:
+        return None
 
     documents_rank, request_stemmed_term_to = {}, {}
     stemmed_request_terms = stemmer.stemWords(request_terms)
@@ -188,7 +262,7 @@ def get_n_best(prepared, request_terms, stemmer, inverted, decoder, n):
             if doc_ids[i] not in documents_rank:
                 # documents_rank {'doc_id': [BM25, PASSAGE, FINAL, {<term>: position-list}]}
                 documents_rank[doc_ids[i]] = [0.0, 0.0, 0.0, \
-                    {stemmed_term: [encoded_lists_of_positions[i], encoded_lists_of_endings[i]]}]
+                    {stemmed_term: [encoded_lists_of_positions[i], encoded_lists_of_endings[i]]}, None]
                 documents_rank[doc_ids[i]][DR_BM25] = BM25_rank
             else:
                 documents_rank[doc_ids[i]][DR_BM25] += BM25_rank
@@ -241,7 +315,7 @@ def get_n_best(prepared, request_terms, stemmer, inverted, decoder, n):
         # best passage info is dictionary
         # where key is position
         # value is idf of stemmed term in this position
-        best_passage_info = None
+        best_passage_info = {}
 
         for position in sorted(position_to_stemmed_term.keys()):
             # from last to first position
@@ -274,13 +348,14 @@ def get_n_best(prepared, request_terms, stemmer, inverted, decoder, n):
                         max_passage = current_passage
                         best_passage_info = {}
                         for current_position in sliding_window_positions:
-                        current_stemmed_term = position_to_stemmed_term[current_position]
-                        current_stemmed_term_idf = dictionary[current_stemmed_term][DIC_IDF]
-                        best_passage_info[current_stemmed_term] = current_stemmed_term_idf                            
+                            current_stemmed_term = position_to_stemmed_term[current_position]
+                            current_stemmed_term_idf = dictionary[current_stemmed_term][DIC_IDF]
+                            best_passage_info[current_position] = current_stemmed_term_idf                            
 
                     
 
         documents_rank[doc_id][DR_PASSAGE] = max_passage
+        documents_rank[doc_id][DR_PASSAGE_INFO] = best_passage_info
 
     # PASSAGE ranking end
 
@@ -291,12 +366,12 @@ def get_n_best(prepared, request_terms, stemmer, inverted, decoder, n):
     final_ranking = sorted([(doc_id, documents_rank[doc_id][DR_FINAL]) for doc_id in documents_rank.keys()], \
                     key=lambda value: value[1], reverse=True)
 
+    n_best = [[doc_id, documents_rank[doc_id][DR_PASSAGE_INFO]] for doc_id, rank in final_ranking]
+
     for doc_id, rank in final_ranking:
         print docID_to[doc_id][DOC_URL]
 
-
-def get_snippets(prepared, forward, doc_ids):
-    pass
+    return n_best
 
 
 def good_bye(signal,frame):
