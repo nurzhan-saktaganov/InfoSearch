@@ -204,7 +204,11 @@ def get_snippets(prepared, forward, decoder, documents, max_len):
         if len(raw_snippet) > snippet_begin + max_len:
             snippet += '...'
 
-        for request_term in request_terms.keys():
+        sorted_request_terms = sorted([[request_term, len(request_term)]\
+                                for request_term in request_terms.keys()],\
+                                            key=lambda value: value[1], reverse=True)
+
+        for request_term, length in sorted_request_terms:
             snippet = snippet.replace(request_term, '<b>' + request_term + '</b>')
 
         print title
