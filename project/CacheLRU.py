@@ -9,7 +9,9 @@ class CacheLRU():
 		self.items_count = 0
 
 	def add(self, key, value):
-		if self.items_count == self.size:
+		if key in self.items:
+			return
+		elif self.items_count == self.size:
 			key_to_delete = self.key_order[0]
 			del self.items[key_to_delete]
 			self.key_order.pop(0)
@@ -19,7 +21,7 @@ class CacheLRU():
 		self.items[key] = value
 		self.key_order.append(key)
 
-	def hasKey(self, key):
+	def has_key(self, key):
 		return key in self.items
 
 	def get(self, key):
