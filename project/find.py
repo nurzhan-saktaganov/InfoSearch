@@ -121,10 +121,8 @@ def main():
 
         if cache.has_key(cache_key):
             n_best = cache.get(cache_key)
-            print 'Cache!'
         else:
             n_best = get_n_best(prepared, request, stemmer, inverted, decoder, n=100)
-            print 'Not cache!'
 
         if n_best == None:
             print 'No matches found!'
@@ -146,8 +144,6 @@ SPLIT_RGX = re.compile('\w+', re.U)
 
 def get_snippets(prepared, forward, decoder, documents, max_len):
     docID_to = prepared['docID_to']
-
-    snippets = []
 
     print documents
 
@@ -208,7 +204,8 @@ def get_snippets(prepared, forward, decoder, documents, max_len):
         if len(raw_snippet) > snippet_begin + max_len:
             snippet += '...'
 
-        
+        for request_term in request_terms.keys():
+            snippet = snippet.replace(request_term, '<b>' + request_term + '</b>')
 
         print title
         print snippet.encode('utf-8')
