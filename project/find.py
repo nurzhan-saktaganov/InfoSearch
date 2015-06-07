@@ -17,6 +17,10 @@ import heapq
 import base64
 import zlib
 
+import CacheLRU
+
+import re
+
 __author__ = 'Nurzhan Saktaganov'
 
 # docID_to
@@ -101,6 +105,8 @@ def main():
 
     stemmer = snowballstemmer.stemmer('russian')
 
+    cache = CacheLRU.CacheLRU(100)
+
     while True:
         sys.stdout.write('\nfind: ')
         try:
@@ -111,32 +117,34 @@ def main():
             print e
             continue
 
-        
-        n_best = get_n_best(prepared, request, stemmer, inverted, decoder, n=100)
+        cache_key = request_to_cache_key(request, stemmer, prepared)
+
+        if cache.has_key(cache_key):
+            n_best = cache.get(cache_key)
+            print 'Cache!'
+        else:
+            n_best = get_n_best(prepared, request, stemmer, inverted, decoder, n=100)
+            print 'Not cache!'
 
         if n_best == None:
             print 'No matches found!'
             continue
+
+        cache.add(cache_key, n_best)
         
         # dpp - doc per page
         page = 0
-        dpp = 1
+        dpp = 10
         begin = page * dpp
 
-        get_snippets(prepared, forward, decoder, documents=n_best[begin:begin + dpp])
+        get_snippets(prepared, forward, decoder, documents=n_best[begin:begin + dpp], max_len=300)
 
         continue
 
-        stemmed_request_terms = stemmer.stemWords(request_terms)
-        request_terms_endings = [get_ending(request_terms[i], stemmed_request_terms[i]) for i in range(len(request_terms))]
+# for get_snippets
+SPLIT_RGX = re.compile('\w+', re.U)
 
-        print ' '.join(request_terms).encode('utf-8')
-        print ' '.join(stemmed_request_terms).encode('utf-8')
-        print '|'.join(request_terms_endings)
-
-
-
-def get_snippets(prepared, forward, decoder, documents):
+def get_snippets(prepared, forward, decoder, documents, max_len):
     docID_to = prepared['docID_to']
 
     snippets = []
@@ -169,20 +177,45 @@ def get_snippets(prepared, forward, decoder, documents):
         #print len(sentences)
 
         indices = []
+        request_terms = {}
+        max_idf = 0.0
 
         for term_position, term_idf in passage_info.iteritems():
             index = get_sentence_index(sentences_bp, term_position)
             if index not in indices:
                 indices.append(index)
+            term_position_in_sentence = term_position - sentences_bp[index]
+            splitted_sentence = re.findall(SPLIT_RGX, sentences[index])
+            current_term = splitted_sentence[term_position_in_sentence]
+            request_terms[current_term] = term_idf
+            if term_idf > max_idf:
+                rarely_term = current_term
 
-        snippet = ' '.join([sentences[index] for index in indices])
+        raw_snippet = ' '.join([sentences[index] for index in indices])
+        snippet_begin = max(0, raw_snippet.find(rarely_term) - max_len / 2)
 
-        print title.encode('utf-8')
+        if snippet_begin > 0:
+            while snippet_begin > 0 and raw_snippet[snippet_begin] != ' ':
+                snippet_begin -= 1
+
+        snippet = ''
+
+        if snippet_begin > 0:
+            snippet += '...'
+
+        snippet += raw_snippet[snippet_begin: snippet_begin + max_len]
+
+        if len(raw_snippet) > snippet_begin + max_len:
+            snippet += '...'
+
+        
+
+        print title
         print snippet.encode('utf-8')
-        print (snippet[:300] + '...').encode('utf-8')
             
         print '\n\n'
 
+# for get_snippets()
 def get_sentence_index(_list, elem):
     low, high = 0, len(_list)
     while low != high:
@@ -193,6 +226,13 @@ def get_sentence_index(_list, elem):
             high = mid
 
     return low - 1
+
+request_to_cache_key = lambda request, stemmer, prepared : \
+    ' '.join(\
+        [stemmer.stemWord(term) \
+        for term in request.split() \
+            if term not in prepared['stop_words'] \
+                and stemmer.stemWord(term) in prepared['dictionary']])
 
 
 # for function get_best
@@ -219,7 +259,7 @@ SL_STEMMED_TERM_POSITION = 1
 def get_n_best(prepared, request, stemmer, inverted, decoder, n):
     dictionary = prepared['dictionary']
     docID_to = prepared['docID_to']
-    stop_words = prepared['docID_to']
+    stop_words = prepared['stop_words']
 
     # filter request terms by deleting stop words
     request_terms = [term for term in request.split() \
