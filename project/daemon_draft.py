@@ -469,8 +469,8 @@ def get_n_best(prepared, request, stemmer, inverted, decoder, n):
                     passage_tfidf = 0.0
                     for current_position in sliding_window_positions:
                         current_stemmed_term = position_to_stemmed_term[current_position]
-                        passage_tfidf += request_stemmed_term_to[current_stemmed_term][RST_IDF] \
-                                            * request_stemmed_term_to[current_stemmed_term][RST_COUNT]
+                        passage_tfidf += request_stemmed_term_to[current_stemmed_term][RST_IDF] #\
+                                           # * request_stemmed_term_to[current_stemmed_term][RST_COUNT]
 
                     current_passage = c_w * completeness + d_w * density + wo_w * 1.0 / (inversions + 1) \
                             + tfidf_w * passage_tfidf + dfb_w * distance_from_beginning
